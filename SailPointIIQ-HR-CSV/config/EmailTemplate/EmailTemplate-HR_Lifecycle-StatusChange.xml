@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE EmailTemplate PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<EmailTemplate name="HR Lifecycle - Status Change">
+  <Body><![CDATA[
+<html>
+<body style="font-family: Arial, sans-serif; font-size: 14px;">
+  <p>Hello,</p>
+  <p>The lifecycle status of the following identity has changed in SailPoint IdentityIQ.</p>
+  <table border="1" cellpadding="6" cellspacing="0" style="border-collapse: collapse;">
+    <tr><td><b>Name</b></td><td>$!displayName</td></tr>
+    <tr><td><b>Employee Number</b></td><td>$!identityName</td></tr>
+    <tr><td><b>Previous Status</b></td><td>$!oldStatus</td></tr>
+    <tr><td><b>New Status</b></td><td><b>$!newStatus</b></td></tr>
+    <tr><td><b>Start Date</b></td><td>$!startDate</td></tr>
+    <tr><td><b>End Date</b></td><td>$!endDate</td></tr>
+    <tr><td><b>Job Description</b></td><td>$!jobDescription</td></tr>
+    <tr><td><b>Manager</b></td><td>$!managerName</td></tr>
+  </table>
+  <p>This is an automated message from SailPoint IdentityIQ.</p>
+</body>
+</html>
+  ]]></Body>
+  <Description>Sent when an identity moves between PreHire, Active and Terminated.</Description>
+  <Signature>
+    <Inputs>
+      <Argument name="identityName" type="string"/>
+      <Argument name="displayName" type="string"/>
+      <Argument name="oldStatus" type="string"/>
+      <Argument name="newStatus" type="string"/>
+      <Argument name="startDate" type="string"/>
+      <Argument name="endDate" type="string"/>
+      <Argument name="jobDescription" type="string"/>
+      <Argument name="managerName" type="string"/>
+    </Inputs>
+  </Signature>
+  <Subject>Lifecycle change: $!displayName ($!identityName) is now $!newStatus</Subject>
+</EmailTemplate>

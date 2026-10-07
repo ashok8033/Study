@@ -1,0 +1,90 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Workflow PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  Launched by the "HR Lifecycle - Status Change" lifecycle event whenever the
+  identity attribute "status" changes (PreHire / Active / Terminated).
+  Sends an email to notifyEmail.
+-->
+<Workflow explicitTransitions="true" name="HR Lifecycle - Status Change Notification" type="IdentityLifecycle">
+
+  <!-- Passed in by the lifecycle event -->
+  <Variable input="true" name="identityName">
+    <Description>Name of the identity whose status changed.</Description>
+  </Variable>
+  <Variable input="true" name="event" transient="true">
+    <Description>IdentityChangeEvent with the old and new identity.</Description>
+  </Variable>
+  <Variable input="true" name="trigger" transient="true"/>
+
+  <!-- Who gets the email -->
+  <Variable initializer="ashokhearts@gmail.com" input="true" name="notifyEmail"/>
+
+  <!-- Filled in by the "Collect Details" step -->
+  <Variable name="oldStatus"/>
+  <Variable name="newStatus"/>
+  <Variable name="displayName"/>
+  <Variable name="startDate"/>
+  <Variable name="endDate"/>
+  <Variable name="jobDescription"/>
+  <Variable name="managerName"/>
+
+  <Description>Emails a notification when an identity moves between lifecycle states.</Description>
+
+  <Step icon="Start" name="Start">
+    <Transition to="Collect Details"/>
+  </Step>
+
+  <Step icon="Task" name="Collect Details">
+    <Script>
+      <Source><![CDATA[
+        import sailpoint.object.Identity;
+
+        Identity oldId = null;
+        Identity newId = null;
+        if (event != null) {
+            try { oldId = (Identity) event.getOldObject(); } catch (Exception e) { }
+            try { newId = (Identity) event.getNewObject(); } catch (Exception e) { }
+        }
+        if (newId == null && identityName != null) {
+            newId = context.getObjectByName(Identity.class, identityName);
+        }
+
+        workflow.put("oldStatus", oldId == null ? null : (String) oldId.getAttribute("status"));
+        if (newId != null) {
+            workflow.put("newStatus",      (String) newId.getAttribute("status"));
+            workflow.put("displayName",    newId.getDisplayName());
+            workflow.put("startDate",      (String) newId.getAttribute("startDate"));
+            workflow.put("endDate",        (String) newId.getAttribute("endDate"));
+            workflow.put("jobDescription", (String) newId.getAttribute("jobDescription"));
+            Identity mgr = newId.getManager();
+            workflow.put("managerName", mgr == null ? null : mgr.getDisplayName());
+        }
+      ]]></Source>
+    </Script>
+    <!-- Only notify on a real move between two lifecycle states -->
+    <Transition to="Send Email">
+      <Script>
+        <Source><![CDATA[
+          return oldStatus != null && newStatus != null && !oldStatus.equals(newStatus);
+        ]]></Source>
+      </Script>
+    </Transition>
+    <Transition to="Stop"/>
+  </Step>
+
+  <Step action="call:sendEmail" icon="Email" name="Send Email">
+    <Arg name="template" value="HR Lifecycle - Status Change"/>
+    <Arg name="to" value="ref:notifyEmail"/>
+    <Arg name="identityName" value="ref:identityName"/>
+    <Arg name="displayName" value="ref:displayName"/>
+    <Arg name="oldStatus" value="ref:oldStatus"/>
+    <Arg name="newStatus" value="ref:newStatus"/>
+    <Arg name="startDate" value="ref:startDate"/>
+    <Arg name="endDate" value="ref:endDate"/>
+    <Arg name="jobDescription" value="ref:jobDescription"/>
+    <Arg name="managerName" value="ref:managerName"/>
+    <Transition to="Stop"/>
+  </Step>
+
+  <Step icon="Stop" name="Stop"/>
+</Workflow>

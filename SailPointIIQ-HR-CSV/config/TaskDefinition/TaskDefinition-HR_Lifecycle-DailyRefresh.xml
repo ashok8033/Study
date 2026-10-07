@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE TaskDefinition PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  Recalculates identity attributes (including "status") and processes lifecycle
+  events. Run it after every HR aggregation, and schedule it daily (shortly
+  after midnight) so date-based moves happen on the right day.
+-->
+<TaskDefinition name="HR Lifecycle - Daily Identity Refresh"
+                resultAction="Rename"
+                subType="task_item_type_identity"
+                type="Identity">
+  <Attributes>
+    <Map>
+      <entry key="promoteAttributes" value="true"/>
+      <entry key="processTriggers" value="true"/>
+      <entry key="refreshManagerStatus" value="true"/>
+      <entry key="correlateEntitlements" value="false"/>
+      <entry key="refreshScorecard" value="false"/>
+      <entry key="checkPolicies" value="false"/>
+      <entry key="provision" value="false"/>
+    </Map>
+  </Attributes>
+  <Description>Refreshes identity attributes (including lifecycle status) and processes lifecycle events.</Description>
+  <Owner>
+    <Reference class="sailpoint.object.Identity" name="spadmin"/>
+  </Owner>
+  <Parent>
+    <Reference class="sailpoint.object.TaskDefinition" name="Refresh Identity Cube"/>
+  </Parent>
+</TaskDefinition>

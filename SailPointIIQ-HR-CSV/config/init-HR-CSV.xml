@@ -9,8 +9,13 @@
   <ImportAction name="include" value="Rule/Rule-HR_CSV-Correlation.xml"/>
   <ImportAction name="include" value="Rule/Rule-HR_CSV-ManagerCorrelation.xml"/>
   <ImportAction name="include" value="Rule/Rule-HR_CSV-IdentityCreation.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_Lifecycle-StatusAttribute.xml"/>
   <ImportAction name="include" value="Application/Application-HR_Authoritative_CSV.xml"/>
   <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_CSV-Aggregation.xml"/>
+  <ImportAction name="include" value="EmailTemplate/EmailTemplate-HR_Lifecycle-StatusChange.xml"/>
+  <ImportAction name="include" value="Workflow/Workflow-HR_Lifecycle-StatusChange.xml"/>
+  <ImportAction name="include" value="IdentityTrigger/IdentityTrigger-HR_Lifecycle-StatusChange.xml"/>
+  <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_Lifecycle-DailyRefresh.xml"/>
   <!-- Imported here, but must be RUN once afterwards: rule "HR CSV - Setup Identity Mappings" -->
   <ImportAction name="include" value="Rule/Rule-HR_CSV-SetupIdentityMappings.xml"/>
 </sailpoint>

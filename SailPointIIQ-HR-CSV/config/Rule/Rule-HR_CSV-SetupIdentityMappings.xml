@@ -6,8 +6,11 @@
     EXISTING Identity ObjectConfig without replacing anything else in it.
     Safe to run more than once: a mapping that already exists is skipped.
 
+    Also creates the "status" identity attribute (PreHire / Active /
+    Terminated), calculated by the global rule "HR Lifecycle - Status Attribute".
+
     Run it from the IIQ console:   rule "HR CSV - Setup Identity Mappings"
-    or from Debug > Rule > Run.    Import the Application first.
+    or from Debug > Rule > Run.    Import the Application and rules first.
   </Description>
   <Source><![CDATA[
   import java.util.ArrayList;
@@ -16,6 +19,7 @@
   import sailpoint.object.AttributeSource;
   import sailpoint.object.ObjectAttribute;
   import sailpoint.object.ObjectConfig;
+  import sailpoint.object.Rule;
 
   String APP_NAME = "HR Authoritative CSV";
 
@@ -31,7 +35,6 @@
       { "jobDescription", "Job Description", "string",  "jobDescription" },
       { "country",        "Country",         "string",  "country"        },
       { "employeeType",   "Employee Type",   "string",  "employeeType"   },
-      { "hrStatus",       "HR Status",       "string",  "status"         },
       { "isManager",      "Is Manager",      "string",  "isManager"      }
   };
 
@@ -96,6 +99,23 @@
                 .append(APP_NAME).append(":").append(appAttr).append("\n");
       }
   }
+
+  // Lifecycle "status" identity attribute, calculated by a global rule
+  Rule statusRule = context.getObjectByName(Rule.class, "HR Lifecycle - Status Attribute");
+  if (statusRule == null) {
+      return "ERROR: rule 'HR Lifecycle - Status Attribute' not found. Import it first.\n" + report;
+  }
+  ObjectAttribute statusAttr = oc.getObjectAttribute("status");
+  if (statusAttr == null) {
+      statusAttr = new ObjectAttribute();
+      statusAttr.setName("status");
+      statusAttr.setDisplayName("Status");
+      statusAttr.setType("string");
+      attrs.add(statusAttr);
+      report.append("Created identity attribute status\n");
+  }
+  statusAttr.setRule(statusRule);
+  report.append("status <- global rule HR Lifecycle - Status Attribute\n");
 
   oc.setObjectAttributes(attrs);
   context.saveObject(oc);

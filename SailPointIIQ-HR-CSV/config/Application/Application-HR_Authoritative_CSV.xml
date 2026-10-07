@@ -255,7 +255,7 @@
       </AttributeDefinition>
       <!-- Not in the file - calculated by the Customization rule -->
       <AttributeDefinition name="status" type="string">
-        <Description>Calculated: Pre-Hire, Active or Terminated</Description>
+        <Description>Calculated: PreHire, Active or Terminated</Description>
       </AttributeDefinition>
       <AttributeDefinition name="inactive" type="boolean">
         <Description>Calculated: true when status is not Active</Description>

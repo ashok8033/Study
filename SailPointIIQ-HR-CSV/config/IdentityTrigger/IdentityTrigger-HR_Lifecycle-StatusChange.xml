@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE IdentityTrigger PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  Lifecycle event: fires when the identity attribute "status" changes and
+  launches the notification workflow. Events are only processed by an identity
+  refresh with "Process events" ticked (see the daily refresh task).
+
+  Same thing in the UI: Setup > Lifecycle Events > New
+    Event Type: Attribute Change, Attribute: Status,
+    Business Process: HR Lifecycle - Status Change Notification
+-->
+<IdentityTrigger attributeName="status"
+                 handler="sailpoint.api.WorkflowTriggerHandler"
+                 name="HR Lifecycle - Status Change"
+                 type="AttributeChange">
+  <Description>Emails a notification when an identity moves between PreHire, Active and Terminated.</Description>
+  <HandlerParameters>
+    <Map>
+      <entry key="workflow" value="HR Lifecycle - Status Change Notification"/>
+    </Map>
+  </HandlerParameters>
+  <Owner>
+    <Reference class="sailpoint.object.Identity" name="spadmin"/>
+  </Owner>
+</IdentityTrigger>

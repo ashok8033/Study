@@ -6,7 +6,7 @@
     - Trims all string values and turns empty strings into null
     - Validates startDate / endDate are in DD-MM-YYYY format
     - Normalises isManager to Y or N (blank or invalid values become N)
-    - Calculates "status" (Pre-Hire / Active / Terminated) and "inactive"
+    - Calculates "status" (PreHire / Active / Terminated) and "inactive"
   </Description>
   <Signature returnType="ResourceObject">
     <Inputs>
@@ -23,6 +23,7 @@
   </Signature>
   <Source><![CDATA[
   import java.text.SimpleDateFormat;
+  import java.util.Calendar;
   import java.util.Date;
   import java.util.ArrayList;
   import java.util.List;
@@ -74,12 +75,19 @@
   }
 
   // 4. Status
-  Date today = new Date();
+  // Compare by whole day: still Active on the end date itself
+  Calendar cal = Calendar.getInstance();
+  cal.set(Calendar.HOUR_OF_DAY, 0);
+  cal.set(Calendar.MINUTE, 0);
+  cal.set(Calendar.SECOND, 0);
+  cal.set(Calendar.MILLISECOND, 0);
+  Date today = cal.getTime();
+
   String status = "Active";
   if (end != null && end.before(today)) {
       status = "Terminated";
   } else if (start != null && start.after(today)) {
-      status = "Pre-Hire";
+      status = "PreHire";
   }
 
   object.setAttribute("status", status);
