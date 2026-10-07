@@ -11,4 +11,6 @@
   <ImportAction name="include" value="Rule/Rule-HR_CSV-IdentityCreation.xml"/>
   <ImportAction name="include" value="Application/Application-HR_Authoritative_CSV.xml"/>
   <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_CSV-Aggregation.xml"/>
+  <!-- Imported here, but must be RUN once afterwards: rule "HR CSV - Setup Identity Mappings" -->
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-SetupIdentityMappings.xml"/>
 </sailpoint>

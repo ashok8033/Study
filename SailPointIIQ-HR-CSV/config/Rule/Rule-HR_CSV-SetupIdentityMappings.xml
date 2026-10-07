@@ -1,0 +1,106 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="HR CSV - Setup Identity Mappings">
+  <Description>
+    One-time setup rule. Adds the HR Authoritative CSV identity mappings to the
+    EXISTING Identity ObjectConfig without replacing anything else in it.
+    Safe to run more than once: a mapping that already exists is skipped.
+
+    Run it from the IIQ console:   rule "HR CSV - Setup Identity Mappings"
+    or from Debug > Rule > Run.    Import the Application first.
+  </Description>
+  <Source><![CDATA[
+  import java.util.ArrayList;
+  import java.util.List;
+  import sailpoint.object.Application;
+  import sailpoint.object.AttributeSource;
+  import sailpoint.object.ObjectAttribute;
+  import sailpoint.object.ObjectConfig;
+
+  String APP_NAME = "HR Authoritative CSV";
+
+  // { identity attribute, display name, type, application attribute }
+  String[][] MAPPINGS = {
+      { "employeeNumber", "Employee Number", "string",  "employeeNumber" },
+      { "firstname",      null,              "string",  "firstName"      },
+      { "lastname",       null,              "string",  "lastName"       },
+      { "manager",        null,              "sailpoint.object.Identity", "managerId" },
+      { "inactive",       null,              "boolean", "inactive"       },
+      { "startDate",      "Start Date",      "string",  "startDate"      },
+      { "endDate",        "End Date",        "string",  "endDate"        },
+      { "jobDescription", "Job Description", "string",  "jobDescription" },
+      { "country",        "Country",         "string",  "country"        },
+      { "employeeType",   "Employee Type",   "string",  "employeeType"   },
+      { "hrStatus",       "HR Status",       "string",  "status"         }
+  };
+
+  Application app = context.getObjectByName(Application.class, APP_NAME);
+  if (app == null) {
+      return "ERROR: application '" + APP_NAME + "' not found. Import it first.";
+  }
+
+  ObjectConfig oc = context.getObjectByName(ObjectConfig.class, "Identity");
+  if (oc == null) {
+      return "ERROR: ObjectConfig 'Identity' not found.";
+  }
+
+  List attrs = oc.getObjectAttributes();
+  if (attrs == null) {
+      attrs = new ArrayList();
+  }
+
+  StringBuilder report = new StringBuilder();
+
+  for (int i = 0; i < MAPPINGS.length; i++) {
+      String idAttr      = MAPPINGS[i][0];
+      String displayName = MAPPINGS[i][1];
+      String type        = MAPPINGS[i][2];
+      String appAttr     = MAPPINGS[i][3];
+
+      ObjectAttribute oa = oc.getObjectAttribute(idAttr);
+      if (oa == null) {
+          oa = new ObjectAttribute();
+          oa.setName(idAttr);
+          oa.setDisplayName(displayName != null ? displayName : idAttr);
+          oa.setType(type);
+          attrs.add(oa);
+          report.append("Created identity attribute ").append(idAttr).append("\n");
+      }
+
+      List sources = oa.getSources();
+      if (sources == null) {
+          sources = new ArrayList();
+      }
+
+      boolean exists = false;
+      for (Object o : sources) {
+          AttributeSource s = (AttributeSource) o;
+          if (s.getApplication() != null
+                  && APP_NAME.equals(s.getApplication().getName())
+                  && appAttr.equals(s.getName())) {
+              exists = true;
+              break;
+          }
+      }
+
+      if (exists) {
+          report.append("Skipped ").append(idAttr).append(" (mapping already exists)\n");
+      } else {
+          AttributeSource src = new AttributeSource();
+          src.setApplication(app);
+          src.setName(appAttr);
+          sources.add(src);
+          oa.setSources(sources);
+          report.append("Mapped ").append(idAttr).append(" <- ")
+                .append(APP_NAME).append(":").append(appAttr).append("\n");
+      }
+  }
+
+  oc.setObjectAttributes(attrs);
+  context.saveObject(oc);
+  context.commitTransaction();
+
+  log.warn("HR CSV identity mapping setup:\n" + report.toString());
+  return report.toString();
+  ]]></Source>
+</Rule>
