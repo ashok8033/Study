@@ -31,7 +31,8 @@
       { "jobDescription", "Job Description", "string",  "jobDescription" },
       { "country",        "Country",         "string",  "country"        },
       { "employeeType",   "Employee Type",   "string",  "employeeType"   },
-      { "hrStatus",       "HR Status",       "string",  "status"         }
+      { "hrStatus",       "HR Status",       "string",  "status"         },
+      { "isManager",      "Is Manager",      "string",  "isManager"      }
   };
 
   Application app = context.getObjectByName(Application.class, APP_NAME);

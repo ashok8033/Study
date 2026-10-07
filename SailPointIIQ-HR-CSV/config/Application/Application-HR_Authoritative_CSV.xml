@@ -199,6 +199,23 @@
           </Script>
         </Field>
 
+        <Field displayName="Is Manager (Y/N)" name="isManager" required="true" type="string">
+          <AllowedValuesDefinition>
+            <Value>
+              <List>
+                <String>Y</String>
+                <String>N</String>
+              </List>
+            </Value>
+          </AllowedValuesDefinition>
+          <Script>
+            <Source><![CDATA[
+              String m = (String) identity.getAttribute("isManager");
+              return "Y".equalsIgnoreCase(m) ? "Y" : "N";
+            ]]></Source>
+          </Script>
+        </Field>
+
       </Section>
     </Form>
   </ProvisioningForms>
@@ -232,6 +249,9 @@
       </AttributeDefinition>
       <AttributeDefinition name="employeeType" type="string">
         <Description>Employee, Contractor or Intern</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="isManager" type="string">
+        <Description>Manager flag: Y or N</Description>
       </AttributeDefinition>
       <!-- Not in the file - calculated by the Customization rule -->
       <AttributeDefinition name="status" type="string">

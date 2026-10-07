@@ -11,7 +11,7 @@
 ## Layout
 
 ```
-data/HR_Employees.csv                                    sample HR feed (15 rows)
+data/HR_Employees.csv                                    sample HR feed (16 rows)
 config/init-HR-CSV.xml                                   imports everything in order
 config/Rule/Rule-HR_CSV-Customization.xml                trims values, checks dates, works out status + inactive
 config/Rule/Rule-HR_CSV-Correlation.xml                  account -> identity on employeeNumber
@@ -24,9 +24,11 @@ config/Rule/Rule-HR_CSV-SetupIdentityMappings.xml        adds the identity mappi
 
 ## CSV columns
 
-`employeeNumber|firstName|lastName|startDate|endDate|managerId|jobDescription|country|employeeType`
+`employeeNumber|firstName|lastName|startDate|endDate|managerId|jobDescription|country|employeeType|isManager`
 
-- `endDate` and `managerId` may be blank (for example, the CEO has no manager).
+- `endDate` and `managerId` may be blank. Ashok Kumar (1000) is at the top and has no manager.
+- `isManager` is `Y` or `N`. A blank or invalid value is treated as `N`.
+- In the sample data, every other user reports to Ashok Kumar (1000), and he is the only one with `isManager = Y`.
 - `employeeType` is one of `Employee`, `Contractor` or `Intern`.
 
 ## Calculated attributes (Customization rule)

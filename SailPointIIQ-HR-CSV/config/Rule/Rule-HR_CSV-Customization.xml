@@ -5,6 +5,7 @@
     Runs for every row read from the HR CSV during aggregation.
     - Trims all string values and turns empty strings into null
     - Validates startDate / endDate are in DD-MM-YYYY format
+    - Normalises isManager to Y or N (blank or invalid values become N)
     - Calculates "status" (Pre-Hire / Active / Terminated) and "inactive"
   </Description>
   <Signature returnType="ResourceObject">
@@ -60,7 +61,19 @@
   Date start = parseDate((String) object.getAttribute("startDate"), "startDate", accountId);
   Date end   = parseDate((String) object.getAttribute("endDate"),   "endDate",   accountId);
 
-  // 3. Status
+  // 3. Manager flag: only Y or N
+  String isMgr = (String) object.getAttribute("isManager");
+  if (isMgr == null) {
+      object.setAttribute("isManager", "N");
+  } else if ("Y".equalsIgnoreCase(isMgr) || "N".equalsIgnoreCase(isMgr)) {
+      object.setAttribute("isManager", isMgr.toUpperCase());
+  } else {
+      log.error("HR CSV - account " + accountId + ": invalid isManager '" + isMgr +
+                "', expected Y or N - defaulting to N");
+      object.setAttribute("isManager", "N");
+  }
+
+  // 4. Status
   Date today = new Date();
   String status = "Active";
   if (end != null && end.before(today)) {
