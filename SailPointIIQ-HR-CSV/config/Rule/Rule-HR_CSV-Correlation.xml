@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="HR CSV - Correlation" type="Correlation">
+  <Description>
+    Correlates an HR CSV account to an existing Identity whose
+    "employeeNumber" identity attribute equals the account's employeeNumber.
+  </Description>
+  <Signature returnType="Map">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="environment" type="Map"/>
+      <Argument name="application" type="Application"/>
+      <Argument name="account" type="ResourceObject"/>
+      <Argument name="link" type="Link"/>
+    </Inputs>
+    <Returns>
+      <Argument name="identityName"/>
+      <Argument name="identity"/>
+      <Argument name="identityAttributeName"/>
+      <Argument name="identityAttributeValue"/>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+  import java.util.HashMap;
+  import java.util.Map;
+
+  Map result = new HashMap();
+  String empNo = (account == null) ? null : account.getStringAttribute("employeeNumber");
+
+  if (empNo != null && empNo.trim().length() > 0) {
+      result.put("identityAttributeName", "employeeNumber");
+      result.put("identityAttributeValue", empNo.trim());
+  }
+  return result;
+  ]]></Source>
+</Rule>

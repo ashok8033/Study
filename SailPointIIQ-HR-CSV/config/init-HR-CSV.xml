@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sailpoint PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  Imports everything in dependency order (rules before the application).
+  From IIQ console:   import /path/to/SailPointIIQ-HR-CSV/config/init-HR-CSV.xml
+-->
+<sailpoint>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-Customization.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-Correlation.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-ManagerCorrelation.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-IdentityCreation.xml"/>
+  <ImportAction name="include" value="Application/Application-HR_Authoritative_CSV.xml"/>
+  <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_CSV-Aggregation.xml"/>
+</sailpoint>

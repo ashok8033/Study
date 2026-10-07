@@ -1,0 +1,16 @@
+employeeNumber|firstName|lastName|startDate|endDate|managerId|jobDescription|country|employeeType
+1001|Rajesh|Kumar|01-04-2015|||Chief Executive Officer|India|Employee
+1002|Sarah|Johnson|15-06-2016||1001|Chief Technology Officer|United States|Employee
+1003|Ananya|Sharma|10-01-2017||1001|Chief Financial Officer|India|Employee
+1004|Michael|Brown|03-09-2018||1002|IAM Engineering Manager|United States|Employee
+1005|Priya|Reddy|21-02-2019||1004|Senior SailPoint Developer|India|Employee
+1006|David|Wilson|12-08-2020||1004|IAM Analyst|United Kingdom|Employee
+1007|Lakshmi|Narayanan|05-11-2021|31-12-2026|1004|SailPoint Consultant|India|Contractor
+1008|Emma|Davis|17-05-2022||1003|Financial Analyst|Canada|Employee
+1009|Arjun|Patel|01-07-2023|30-06-2024|1003|Accounts Assistant|India|Contractor
+1010|Olivia|Martin|14-03-2024||1002|DevOps Engineer|Australia|Employee
+1011|Vikram|Singh|02-06-2025|29-08-2025|1005|IAM Intern|India|Intern
+1012|Sophie|Muller|20-01-2026||1002|Cloud Security Architect|Germany|Employee
+1013|Karthik|Iyer|01-09-2026|28-02-2027|1005|Identity Governance Intern|India|Intern
+1014|James|Taylor|15-12-2026||1004|IAM Support Engineer|United States|Employee
+1015|Meera|Joshi|08-02-2019|15-03-2025|1003|Payroll Specialist|India|Employee

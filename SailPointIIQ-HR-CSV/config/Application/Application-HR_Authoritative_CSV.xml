@@ -1,0 +1,245 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Application PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  HR Authoritative CSV application (Delimited File connector).
+
+  File format : pipe ( | ) delimited, first line is the header
+  Date format : DD-MM-YYYY  (startDate, endDate)
+  Account ID  : employeeNumber
+
+  Rules referenced here must be imported BEFORE this file
+  (see init-HR-CSV.xml for the correct import order).
+-->
+<Application authoritative="true"
+             connector="sailpoint.connector.DelimitedFileConnector"
+             featuresString="DIRECT_PERMISSIONS, NO_RANDOM_ACCESS, DISCOVER_SCHEMA"
+             icon="enterpriseIcon"
+             name="HR Authoritative CSV"
+             profileClass=""
+             type="DelimitedFile">
+  <Attributes>
+    <Map>
+      <!-- Change this path to where the file lives on the IIQ server -->
+      <entry key="file" value="/opt/sailpoint/hrfeed/HR_Employees.csv"/>
+      <entry key="filetransport" value="local"/>
+      <entry key="parseType" value="delimited"/>
+      <entry key="delimiter" value="|"/>
+      <entry key="hasHeader" value="true"/>
+      <entry key="filterEmptyRecords" value="true"/>
+      <entry key="mergeRows" value="false"/>
+      <entry key="stopIfLineHasWrongColumnLength" value="true"/>
+      <entry key="partitionMode" value="disabled"/>
+      <entry key="templateApplication" value="DelimitedFile Template"/>
+      <entry key="sysDescriptions">
+        <value>
+          <Map>
+            <entry key="en_US" value="Authoritative HR feed delivered as a pipe delimited CSV file."/>
+          </Map>
+        </value>
+      </entry>
+    </Map>
+  </Attributes>
+
+  <!-- Correlates HR accounts to identities on employeeNumber -->
+  <CorrelationRule>
+    <Reference class="sailpoint.object.Rule" name="HR CSV - Correlation"/>
+  </CorrelationRule>
+
+  <!-- Sets name / displayName etc. when a new identity is created from HR -->
+  <CreationRule>
+    <Reference class="sailpoint.object.Rule" name="HR CSV - Identity Creation"/>
+  </CreationRule>
+
+  <!-- Trims values, validates DD-MM-YYYY dates and computes status/inactive -->
+  <CustomizationRule>
+    <Reference class="sailpoint.object.Rule" name="HR CSV - Customization"/>
+  </CustomizationRule>
+
+  <!-- Resolves the managerId column to the manager's Identity -->
+  <ManagerCorrelationRule>
+    <Reference class="sailpoint.object.Rule" name="HR CSV - Manager Correlation"/>
+  </ManagerCorrelationRule>
+
+  <Owner>
+    <Reference class="sailpoint.object.Identity" name="spadmin"/>
+  </Owner>
+
+  <!-- ============================================================
+       CREATE ACCOUNT PROVISIONING POLICY
+       Values are pulled from the Identity cube. Field names must
+       match the account schema attribute names below.
+       ============================================================ -->
+  <ProvisioningForms>
+    <Form name="HR CSV - Create Account Policy" objectType="account" type="Create">
+      <Attributes>
+        <Map>
+          <entry key="pageTitle" value="HR CSV - Create Account Policy"/>
+        </Map>
+      </Attributes>
+      <Section name="Account Details">
+
+        <Field displayName="Employee Number" name="employeeNumber" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getAttribute("employeeNumber");
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="First Name" name="firstName" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getFirstname();
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Last Name" name="lastName" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getLastname();
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Start Date (DD-MM-YYYY)" name="startDate" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              String sd = (String) identity.getAttribute("startDate");
+              if (sd == null || sd.trim().length() == 0) {
+                  // Default to today when the identity has no start date
+                  return new java.text.SimpleDateFormat("dd-MM-yyyy").format(new java.util.Date());
+              }
+              return sd;
+            ]]></Source>
+          </Script>
+          <ValidationScript>
+            <Source><![CDATA[
+              if (value == null || value.toString().trim().length() == 0) {
+                  return "Start Date is required.";
+              }
+              try {
+                  java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("dd-MM-yyyy");
+                  f.setLenient(false);
+                  f.parse(value.toString().trim());
+              } catch (Exception e) {
+                  return "Start Date must be in DD-MM-YYYY format.";
+              }
+              return null;
+            ]]></Source>
+          </ValidationScript>
+        </Field>
+
+        <Field displayName="End Date (DD-MM-YYYY)" name="endDate" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getAttribute("endDate");
+            ]]></Source>
+          </Script>
+          <ValidationScript>
+            <Source><![CDATA[
+              if (value == null || value.toString().trim().length() == 0) {
+                  return null;  // optional
+              }
+              try {
+                  java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("dd-MM-yyyy");
+                  f.setLenient(false);
+                  f.parse(value.toString().trim());
+              } catch (Exception e) {
+                  return "End Date must be in DD-MM-YYYY format.";
+              }
+              return null;
+            ]]></Source>
+          </ValidationScript>
+        </Field>
+
+        <Field displayName="Manager ID" name="managerId" type="string">
+          <Script>
+            <Source><![CDATA[
+              sailpoint.object.Identity mgr = identity.getManager();
+              if (mgr != null) {
+                  return mgr.getAttribute("employeeNumber");
+              }
+              return null;
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Job Description" name="jobDescription" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getAttribute("jobDescription");
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Country" name="country" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getAttribute("country");
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Employee Type" name="employeeType" required="true" type="string">
+          <AllowedValuesDefinition>
+            <Value>
+              <List>
+                <String>Employee</String>
+                <String>Contractor</String>
+                <String>Intern</String>
+              </List>
+            </Value>
+          </AllowedValuesDefinition>
+          <Script>
+            <Source><![CDATA[
+              String t = (String) identity.getAttribute("employeeType");
+              return (t == null) ? "Employee" : t;
+            ]]></Source>
+          </Script>
+        </Field>
+
+      </Section>
+    </Form>
+  </ProvisioningForms>
+
+  <Schemas>
+    <Schema displayAttribute="employeeNumber" identityAttribute="employeeNumber" instanceAttribute=""
+            nativeObjectType="account" objectType="account">
+      <AttributeDefinition name="employeeNumber" type="string">
+        <Description>Unique employee number (account ID)</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="firstName" type="string">
+        <Description>First name</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="lastName" type="string">
+        <Description>Last name</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="startDate" type="string">
+        <Description>Start date (DD-MM-YYYY)</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="endDate" type="string">
+        <Description>End date (DD-MM-YYYY), blank if none</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="managerId" type="string">
+        <Description>employeeNumber of the manager</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="jobDescription" type="string">
+        <Description>Job description / title</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="country" type="string">
+        <Description>Country</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="employeeType" type="string">
+        <Description>Employee, Contractor or Intern</Description>
+      </AttributeDefinition>
+      <!-- Not in the file - calculated by the Customization rule -->
+      <AttributeDefinition name="status" type="string">
+        <Description>Calculated: Pre-Hire, Active or Terminated</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="inactive" type="boolean">
+        <Description>Calculated: true when status is not Active</Description>
+      </AttributeDefinition>
+    </Schema>
+  </Schemas>
+</Application>

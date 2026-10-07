@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="HR CSV - Identity Creation" type="IdentityCreation">
+  <Description>
+    Runs when aggregation creates a new Identity from an uncorrelated HR row.
+    Identity name = employeeNumber, displayName = "firstName lastName".
+  </Description>
+  <Signature returnType="void">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="environment" type="Map"/>
+      <Argument name="application" type="Application"/>
+      <Argument name="account" type="ResourceObject"/>
+      <Argument name="identity" type="Identity"/>
+    </Inputs>
+  </Signature>
+  <Source><![CDATA[
+  String empNo = account.getStringAttribute("employeeNumber");
+  String first = account.getStringAttribute("firstName");
+  String last  = account.getStringAttribute("lastName");
+
+  if (empNo != null) {
+      identity.setName(empNo);
+      identity.setAttribute("employeeNumber", empNo);
+  }
+  if (first != null) identity.setFirstname(first);
+  if (last  != null) identity.setLastname(last);
+
+  StringBuilder dn = new StringBuilder();
+  if (first != null) dn.append(first);
+  if (last  != null) dn.append(dn.length() > 0 ? " " : "").append(last);
+  if (dn.length() > 0) identity.setDisplayName(dn.toString());
+
+  // Contractors / Interns are flagged as non-employees
+  String type = account.getStringAttribute("employeeType");
+  identity.setType("Employee".equalsIgnoreCase(type) ? "employee" : "contractor");
+  ]]></Source>
+</Rule>
