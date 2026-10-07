@@ -15,9 +15,11 @@
                  type="AttributeChange">
   <Description>Emails a notification when an identity moves between PreHire, Active and Terminated.</Description>
   <HandlerParameters>
-    <Map>
-      <entry key="workflow" value="HR Lifecycle - Status Change Notification"/>
-    </Map>
+    <Attributes>
+      <Map>
+        <entry key="workflow" value="HR Lifecycle - Status Change Notification"/>
+      </Map>
+    </Attributes>
   </HandlerParameters>
   <Owner>
     <Reference class="sailpoint.object.Identity" name="spadmin"/>
