@@ -42,7 +42,7 @@ config/Rule/Rule-HR_CSV-SetupIdentityMappings.xml        adds the identity mappi
 ## Deploy
 
 1. Copy `data/HR_Employees.csv` to the IIQ server, then update the `file` entry in the Application XML
-   (default: `/opt/sailpoint/hrfeed/HR_Employees.csv`).
+   (default: `C:/SailPoint/hrfeed/HR_Employees.csv`).
 2. Import the objects. In the IIQ console run `import <path>/config/init-HR-CSV.xml`, or import each file
    through **Global Settings > Import from File**. Import the rules first.
 3. Add the identity mappings by running the setup rule once, from the IIQ console:

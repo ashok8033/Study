@@ -20,7 +20,7 @@
   <Attributes>
     <Map>
       <!-- Change this path to where the file lives on the IIQ server -->
-      <entry key="file" value="/opt/sailpoint/hrfeed/HR_Employees.csv"/>
+      <entry key="file" value="C:/SailPoint/hrfeed/HR_Employees.csv"/>
       <entry key="filetransport" value="local"/>
       <entry key="parseType" value="delimited"/>
       <entry key="delimiter" value="|"/>
