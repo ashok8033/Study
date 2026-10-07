@@ -2,8 +2,10 @@
 <!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
 <Rule language="beanshell" name="HR CSV - Correlation" type="Correlation">
   <Description>
-    Correlates an HR CSV account to an existing Identity whose
-    "employeeNumber" identity attribute equals the account's employeeNumber.
+    Correlates an HR CSV account to the Identity whose NAME equals the
+    account's employeeNumber (the Identity Creation rule names identities
+    after their employeeNumber). Identity name is always searchable, so no
+    extended/searchable identity attribute is needed.
   </Description>
   <Signature returnType="Map">
     <Inputs>
@@ -29,8 +31,7 @@
   String empNo = (account == null) ? null : account.getStringAttribute("employeeNumber");
 
   if (empNo != null && empNo.trim().length() > 0) {
-      result.put("identityAttributeName", "employeeNumber");
-      result.put("identityAttributeValue", empNo.trim());
+      result.put("identityName", empNo.trim());
   }
   return result;
   ]]></Source>

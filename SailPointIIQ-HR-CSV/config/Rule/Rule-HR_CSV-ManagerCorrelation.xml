@@ -4,7 +4,8 @@
   <Description>
     Finds the manager Identity for an HR account. managerAttributeValue is the
     value of the "manager" identity attribute mapping (sourced from the
-    managerId column), which holds the manager's employeeNumber.
+    managerId column), which holds the manager's employeeNumber. Identities
+    are named after their employeeNumber, so match on identity name.
   </Description>
   <Signature returnType="Map">
     <Inputs>
@@ -30,8 +31,7 @@
 
   Map result = new HashMap();
   if (managerAttributeValue != null && managerAttributeValue.trim().length() > 0) {
-      result.put("identityAttributeName", "employeeNumber");
-      result.put("identityAttributeValue", managerAttributeValue.trim());
+      result.put("identityName", managerAttributeValue.trim());
   }
   return result;
   ]]></Source>
