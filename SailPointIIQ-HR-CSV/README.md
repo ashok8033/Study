@@ -21,6 +21,8 @@ config/Application/Application-HR_Authoritative_CSV.xml  app, schema, Create Acc
 config/TaskDefinition/TaskDefinition-HR_CSV-Aggregation.xml
 config/Rule/Rule-HR_CSV-SetupIdentityMappings.xml        adds the identity mappings + status attribute (run once)
 config/Rule/Rule-HR_Lifecycle-StatusAttribute.xml        global rule: calculates identity "status"
+config/Rule/Rule-HR_CSV-ShowOnIdentityPage.xml           shows HR attributes on View Identity (run once)
+config/Rule/Rule-HR_CSV-Diagnose.xml                     read-only troubleshooting report
 config/EmailTemplate/EmailTemplate-HR_Lifecycle-StatusChange.xml
 config/Workflow/Workflow-HR_Lifecycle-StatusChange.xml   sends the status-change email
 config/IdentityTrigger/IdentityTrigger-HR_Lifecycle-StatusChange.xml   lifecycle event on "status" change
@@ -87,7 +89,9 @@ in the workflow. The first time `status` is set on an identity there is no previ
 Setup:
 
 1. Import `config/init-HR-CSV.xml`.
-2. Run `rule "HR CSV - Setup Identity Mappings"` in the IIQ console.
+2. Run `rule "HR CSV - Setup Identity Mappings"` in the IIQ console, then
+   `rule "HR CSV - Show Attributes On Identity Page"` so Status, Start Date, End Date etc.
+   appear on the View Identity > Attributes tab (log out and back in afterwards).
 3. Configure mail in **Global Settings > IdentityIQ Configuration > Mail Settings**. For Gmail use
    `smtp.gmail.com`, port 587, TLS, and a Google *app password* (not your normal password).
    To test without SMTP, set the email notifier to write to a file instead.

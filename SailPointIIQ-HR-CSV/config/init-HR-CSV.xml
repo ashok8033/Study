@@ -18,4 +18,8 @@
   <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_Lifecycle-DailyRefresh.xml"/>
   <!-- Imported here, but must be RUN once afterwards: rule "HR CSV - Setup Identity Mappings" -->
   <ImportAction name="include" value="Rule/Rule-HR_CSV-SetupIdentityMappings.xml"/>
+  <!-- Run once afterwards: rule "HR CSV - Show Attributes On Identity Page" -->
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-ShowOnIdentityPage.xml"/>
+  <!-- Read-only troubleshooting: rule "HR CSV - Diagnose" -->
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-Diagnose.xml"/>
 </sailpoint>

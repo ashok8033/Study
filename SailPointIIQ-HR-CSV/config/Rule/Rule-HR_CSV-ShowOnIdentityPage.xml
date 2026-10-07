@@ -1,0 +1,64 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="HR CSV - Show Attributes On Identity Page">
+  <Description>
+    One-time setup rule. Adds the HR identity attributes (Status, Start Date,
+    End Date, ...) to the "identityViewAttributes" list in UIConfig, which
+    controls what the View Identity > Attributes tab shows.
+    Existing entries are kept; attributes already in the list are skipped.
+
+    Run it from the IIQ console:   rule "HR CSV - Show Attributes On Identity Page"
+    Then log out and back in (or restart Tomcat) to see the change.
+  </Description>
+  <Source><![CDATA[
+  import java.util.ArrayList;
+  import java.util.List;
+  import sailpoint.object.Attributes;
+  import sailpoint.object.UIConfig;
+  import sailpoint.tools.Util;
+
+  String KEY = "identityViewAttributes";
+  String[] ADD = { "status", "startDate", "endDate", "employeeNumber",
+                   "jobDescription", "employeeType", "country", "isManager" };
+
+  UIConfig ui = context.getObjectByName(UIConfig.class, "UIConfig");
+  if (ui == null) {
+      return "ERROR: UIConfig object not found.";
+  }
+
+  Attributes attrs = ui.getAttributes();
+  if (attrs == null) {
+      attrs = new Attributes();
+      ui.setAttributes(attrs);
+  }
+
+  Object current = attrs.get(KEY);
+  boolean wasString = (current == null) || (current instanceof String);
+  List names = new ArrayList();
+  if (current instanceof List) {
+      names.addAll((List) current);
+  } else if (current != null) {
+      names.addAll(Util.csvToList(current.toString()));
+  } else {
+      // IIQ default for the View Identity Attributes tab
+      names.addAll(Util.csvToList("name,firstname,lastname,email,manager,type"));
+  }
+
+  StringBuilder report = new StringBuilder("Before: " + names + "\n");
+  for (String n : ADD) {
+      if (!names.contains(n)) {
+          names.add(n);
+          report.append("Added ").append(n).append("\n");
+      }
+  }
+
+  // Store it back in the same form it was found in
+  attrs.put(KEY, wasString ? Util.listToCsv(names) : names);
+  context.saveObject(ui);
+  context.commitTransaction();
+
+  report.append("After: ").append(names).append("\n");
+  report.append("Log out and back in (or restart Tomcat) to see the change.");
+  return report.toString();
+  ]]></Source>
+</Rule>
