@@ -23,6 +23,7 @@ config/Rule/Rule-HR_CSV-SetupIdentityMappings.xml        adds the identity mappi
 config/Rule/Rule-HR_Lifecycle-StatusAttribute.xml        global rule: calculates identity "status"
 config/Rule/Rule-HR_CSV-ShowOnIdentityPage.xml           shows HR attributes on View Identity (run once)
 config/Rule/Rule-HR_CSV-Diagnose.xml                     read-only troubleshooting report
+config/Rule/Rule-HR_Lifecycle-SendTestEmail.xml          prints mail settings and sends one test email
 config/EmailTemplate/EmailTemplate-HR_Lifecycle-StatusChange.xml
 config/Workflow/Workflow-HR_Lifecycle-StatusChange.xml   sends the status-change email
 config/IdentityTrigger/IdentityTrigger-HR_Lifecycle-StatusChange.xml   lifecycle event on "status" change

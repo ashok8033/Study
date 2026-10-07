@@ -22,4 +22,6 @@
   <ImportAction name="include" value="Rule/Rule-HR_CSV-ShowOnIdentityPage.xml"/>
   <!-- Read-only troubleshooting: rule "HR CSV - Diagnose" -->
   <ImportAction name="include" value="Rule/Rule-HR_CSV-Diagnose.xml"/>
+  <!-- Troubleshooting: rule "HR Lifecycle - Send Test Email" -->
+  <ImportAction name="include" value="Rule/Rule-HR_Lifecycle-SendTestEmail.xml"/>
 </sailpoint>
