@@ -1,0 +1,40 @@
+# Creates ou=people (users) and ou=groups (role groups) in ApacheDS.
+# ApacheDS ships with the partition dc=example,dc=com.
+# Import with Apache Directory Studio: right-click dc=example,dc=com > Import > LDIF Import
+# or:  ldapadd -H ldap://localhost:10389 -D "uid=admin,ou=system" -w secret -f ApacheDS-ou-people-and-groups.ldif
+
+dn: ou=people,dc=example,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: people
+description: Users provisioned by SailPoint IdentityIQ
+
+# Groups used by the IIQ roles. groupOfUniqueNames needs at least one member,
+# so each starts with the admin entry as a placeholder member.
+
+dn: ou=groups,dc=example,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: groups
+description: Groups managed by SailPoint IdentityIQ roles
+
+dn: cn=AllEmployees,ou=groups,dc=example,dc=com
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: AllEmployees
+description: Every Active identity (Birthright - All Active Users)
+uniqueMember: uid=admin,ou=system
+
+dn: cn=Contractors,ou=groups,dc=example,dc=com
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: Contractors
+description: Active contractors (Birthright - Contractors)
+uniqueMember: uid=admin,ou=system
+
+dn: cn=Managers,ou=groups,dc=example,dc=com
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: Managers
+description: Active managers, isManager = Y (Birthright - Managers)
+uniqueMember: uid=admin,ou=system

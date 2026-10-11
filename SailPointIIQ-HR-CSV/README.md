@@ -11,7 +11,7 @@
 ## Layout
 
 ```
-ldif/ApacheDS-groups.ldif                                creates the role groups in ApacheDS (ou=groups,ou=system)
+ldif/ApacheDS-ou-people-and-groups.ldif                  creates ou=people, ou=groups and the role groups in ApacheDS
 data/HR_Employees.csv                                    sample HR feed (16 rows)
 config/init-HR-CSV.xml                                   imports everything in order
 config/Rule/Rule-HR_CSV-Customization.xml                trims values, checks dates, works out status + inactive
@@ -111,8 +111,8 @@ the daily refresh. Their status changes to Terminated and an email is sent.
 |---|---|
 | Application | `LDAP ApacheDS` (LDAP connector) |
 | Server | `localhost:10389`, bind `uid=admin,ou=system` / `secret` (ApacheDS defaults) |
-| Users | `uid=<firstname.lastname>,ou=users,ou=system` |
-| Groups | `groupOfUniqueNames` in `ou=groups,ou=system`, member attribute `uniqueMember` |
+| Users | `uid=<firstname.lastname>,ou=people,dc=example,dc=com` |
+| Groups | `groupOfUniqueNames` in `ou=groups,dc=example,dc=com`, member attribute `uniqueMember` |
 | Initial password | `Welcome@<employeeNumber>` (lab only) |
 
 LDAP access is granted only through roles. Birthright **business roles** are assigned automatically by
@@ -131,7 +131,7 @@ Terminated, the role is removed and the group membership is taken away. The LDAP
 
 Files:
 
-- `ldif/ApacheDS-groups.ldif`: the three groups in `ou=groups,ou=system`
+- `ldif/ApacheDS-ou-people-and-groups.ldif`: `ou=people`, `ou=groups` and the three groups
 - `config/Application/Application-LDAP_ApacheDS.xml`: connection, account and group schema, **Create Account policy**
 - `config/Rule/Rule-LDAP_ApacheDS-Correlation.xml`: links LDAP accounts to identities by employeeNumber
 - `config/Bundle/Bundle-LDAP_ApacheDS-ITRoles.xml`: the three IT roles
@@ -140,7 +140,7 @@ Files:
 
 Setup:
 
-1. In Apache Directory Studio, import `ldif/ApacheDS-groups.ldif` (the OUs `ou=users,ou=system` and `ou=groups,ou=system` already exist).
+1. In Apache Directory Studio, import `ldif/ApacheDS-ou-people-and-groups.ldif` under `dc=example,dc=com`.
 2. Import `config/init-HR-CSV.xml`.
 3. Open **Applications > LDAP ApacheDS > Configuration**, re-enter the bind password, and click **Test Connection**.
 4. If LDAP accounts already exist, run **LDAP ApacheDS - Account Aggregation** first so IIQ knows about them.

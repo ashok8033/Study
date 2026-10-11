@@ -21,7 +21,7 @@
           <Filter operation="CONTAINS_ALL" property="groups">
             <Value>
               <List>
-                <String>cn=AllEmployees,ou=groups,ou=system</String>
+                <String>cn=AllEmployees,ou=groups,dc=example,dc=com</String>
               </List>
             </Value>
           </Filter>
@@ -44,7 +44,7 @@
           <Filter operation="CONTAINS_ALL" property="groups">
             <Value>
               <List>
-                <String>cn=Contractors,ou=groups,ou=system</String>
+                <String>cn=Contractors,ou=groups,dc=example,dc=com</String>
               </List>
             </Value>
           </Filter>
@@ -67,7 +67,7 @@
           <Filter operation="CONTAINS_ALL" property="groups">
             <Value>
               <List>
-                <String>cn=Managers,ou=groups,ou=system</String>
+                <String>cn=Managers,ou=groups,dc=example,dc=com</String>
               </List>
             </Value>
           </Filter>
