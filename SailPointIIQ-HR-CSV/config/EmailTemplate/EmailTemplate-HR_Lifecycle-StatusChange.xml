@@ -15,6 +15,7 @@
     <tr><td><b>End Date</b></td><td>$!endDate</td></tr>
     <tr><td><b>Job Description</b></td><td>$!jobDescription</td></tr>
     <tr><td><b>Manager</b></td><td>$!managerName</td></tr>
+    <tr><td><b>LDAP Account</b></td><td>$!ldapResult</td></tr>
   </table>
   <p>This is an automated message from SailPoint IdentityIQ.</p>
 </body>
@@ -31,6 +32,7 @@
       <Argument name="endDate" type="string"/>
       <Argument name="jobDescription" type="string"/>
       <Argument name="managerName" type="string"/>
+      <Argument name="ldapResult" type="string"/>
     </Inputs>
   </Signature>
   <Subject>Lifecycle change: $!displayName ($!identityName) is now $!newStatus</Subject>

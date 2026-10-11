@@ -1,0 +1,230 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Application PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  LDAP target application for Apache Directory Server (ApacheDS).
+
+  ApacheDS defaults used here:
+    host        localhost
+    port        10389 (plain LDAP, no SSL)
+    bind user   uid=admin,ou=system
+    password    secret          <- change it, then set it again in the UI
+    users go to ou=people,dc=example,dc=com  (create it with ldif/ApacheDS-ou-people.ldif)
+
+  The password below is plain text for a first import. After importing, open
+  the application in the UI and re-enter it so IIQ stores it encrypted.
+-->
+<Application connector="sailpoint.connector.LDAPConnector"
+             featuresString="PROVISIONING, SYNC_PROVISIONING, PASSWORD, SEARCH, AUTHENTICATE"
+             icon="directoryIcon"
+             name="LDAP ApacheDS"
+             profileClass=""
+             type="LDAP">
+  <Attributes>
+    <Map>
+      <entry key="host" value="localhost"/>
+      <entry key="port" value="10389"/>
+      <entry key="useSSL">
+        <value><Boolean></Boolean></value>
+      </entry>
+      <entry key="authorizationType" value="simple"/>
+      <entry key="user" value="uid=admin,ou=system"/>
+      <entry key="password" value="secret"/>
+      <entry key="pageSize" value="100"/>
+      <entry key="searchDNs">
+        <value>
+          <List>
+            <Map>
+              <entry key="searchDN" value="ou=people,dc=example,dc=com"/>
+              <entry key="iterateSearchFilter" value="(objectClass=inetOrgPerson)"/>
+              <entry key="searchScope" value="SUBTREE"/>
+            </Map>
+          </List>
+        </value>
+      </entry>
+      <entry key="authSearchAttributes">
+        <value>
+          <List>
+            <String>uid</String>
+          </List>
+        </value>
+      </entry>
+      <entry key="templateApplication" value="LDAP Template"/>
+      <entry key="sysDescriptions">
+        <value>
+          <Map>
+            <entry key="en_US" value="Apache Directory Server - user accounts under ou=people,dc=example,dc=com"/>
+          </Map>
+        </value>
+      </entry>
+    </Map>
+  </Attributes>
+
+  <!-- LDAP accounts carry employeeNumber, which is the IIQ identity name -->
+  <CorrelationRule>
+    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - Correlation"/>
+  </CorrelationRule>
+
+  <Owner>
+    <Reference class="sailpoint.object.Identity" name="spadmin"/>
+  </Owner>
+
+  <!-- ============================================================
+       CREATE ACCOUNT POLICY
+       uid  = firstname.lastname (lower case), made unique with 2, 3, ...
+       dn   = uid=<uid>,ou=people,dc=example,dc=com
+       ============================================================ -->
+  <ProvisioningForms>
+    <Form name="LDAP ApacheDS - Create Account Policy" objectType="account" type="Create">
+      <Attributes>
+        <Map>
+          <entry key="pageTitle" value="LDAP ApacheDS - Create Account Policy"/>
+        </Map>
+      </Attributes>
+      <Section name="Account Details">
+
+        <Field displayName="User ID" name="uid" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              import sailpoint.object.Application;
+              import sailpoint.object.Filter;
+              import sailpoint.object.Link;
+              import sailpoint.object.QueryOptions;
+
+              String first = identity.getFirstname() == null ? "" : identity.getFirstname();
+              String last  = identity.getLastname()  == null ? "" : identity.getLastname();
+              String base  = (first + "." + last).toLowerCase().replaceAll("[^a-z0-9.]", "");
+              if (base.equals(".")) base = identity.getName();
+
+              // Make it unique among the LDAP accounts IIQ knows about
+              Application app = context.getObjectByName(Application.class, "LDAP ApacheDS");
+              String uid = base;
+              int n = 2;
+              while (app != null) {
+                  String dn = "uid=" + uid + ",ou=people,dc=example,dc=com";
+                  QueryOptions qo = new QueryOptions();
+                  qo.addFilter(Filter.eq("application", app));
+                  qo.addFilter(Filter.ignoreCase(Filter.eq("nativeIdentity", dn)));
+                  if (context.countObjects(Link.class, qo) == 0) break;
+                  uid = base + n;
+                  n++;
+              }
+              return uid;
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field dependencies="uid" displayName="Distinguished Name" name="dn" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              // "uid" is the value calculated by the field above
+              return "uid=" + uid + ",ou=people,dc=example,dc=com";
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Object Classes" multi="true" name="objectClass" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              java.util.List oc = new java.util.ArrayList();
+              oc.add("top");
+              oc.add("person");
+              oc.add("organizationalPerson");
+              oc.add("inetOrgPerson");
+              return oc;
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Common Name" name="cn" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getDisplayName();
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Surname" name="sn" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getLastname();
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Given Name" name="givenName" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getFirstname();
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Display Name" name="displayName" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getDisplayName();
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field dependencies="uid" displayName="Email" name="mail" type="string">
+          <Script>
+            <Source><![CDATA[
+              return uid + "@example.com";
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Employee Number" name="employeeNumber" required="true" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getName();
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Title" name="title" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getAttribute("jobDescription");
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <Field displayName="Employee Type" name="employeeType" type="string">
+          <Script>
+            <Source><![CDATA[
+              return identity.getAttribute("employeeType");
+            ]]></Source>
+          </Script>
+        </Field>
+
+        <!-- Initial password. LAB ONLY: change this pattern for real use. -->
+        <Field displayName="Password" name="password" required="true" type="secret">
+          <Script>
+            <Source><![CDATA[
+              return "Welcome@" + identity.getName();
+            ]]></Source>
+          </Script>
+        </Field>
+
+      </Section>
+    </Form>
+  </ProvisioningForms>
+
+  <Schemas>
+    <Schema displayAttribute="uid" identityAttribute="dn" instanceAttribute=""
+            nativeObjectType="inetOrgPerson" objectType="account">
+      <AttributeDefinition name="uid" type="string"/>
+      <AttributeDefinition name="cn" type="string"/>
+      <AttributeDefinition name="sn" type="string"/>
+      <AttributeDefinition name="givenName" type="string"/>
+      <AttributeDefinition name="displayName" type="string"/>
+      <AttributeDefinition name="mail" type="string"/>
+      <AttributeDefinition name="employeeNumber" type="string"/>
+      <AttributeDefinition name="employeeType" type="string"/>
+      <AttributeDefinition name="title" type="string"/>
+      <AttributeDefinition multi="true" name="objectClass" type="string"/>
+    </Schema>
+  </Schemas>
+</Application>

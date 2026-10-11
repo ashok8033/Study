@@ -1,0 +1,22 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE TaskDefinition PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<TaskDefinition name="LDAP ApacheDS - Account Aggregation"
+                resultAction="Rename"
+                subType="task_item_type_acct_aggregation"
+                type="AccountAggregation">
+  <Attributes>
+    <Map>
+      <entry key="applications" value="LDAP ApacheDS"/>
+      <entry key="checkDeleted" value="true"/>
+      <entry key="noOptimizeReaggregation" value="true"/>
+      <entry key="promoteManagedAttributes" value="false"/>
+    </Map>
+  </Attributes>
+  <Description>Reads the LDAP ApacheDS accounts back into IIQ and links them to identities.</Description>
+  <Owner>
+    <Reference class="sailpoint.object.Identity" name="spadmin"/>
+  </Owner>
+  <Parent>
+    <Reference class="sailpoint.object.TaskDefinition" name="Account Aggregation"/>
+  </Parent>
+</TaskDefinition>

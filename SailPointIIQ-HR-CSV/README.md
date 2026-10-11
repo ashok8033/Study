@@ -11,6 +11,7 @@
 ## Layout
 
 ```
+ldif/ApacheDS-ou-people.ldif                             creates ou=people in ApacheDS
 data/HR_Employees.csv                                    sample HR feed (16 rows)
 config/init-HR-CSV.xml                                   imports everything in order
 config/Rule/Rule-HR_CSV-Customization.xml                trims values, checks dates, works out status + inactive
@@ -103,4 +104,34 @@ Setup:
 
 To test: change a user's `endDate` in the CSV to yesterday's date, then run the aggregation and
 the daily refresh. Their status changes to Terminated and an email is sent.
+
+## LDAP (ApacheDS) account creation
+
+| Item | Value |
+|---|---|
+| Application | `LDAP ApacheDS` (LDAP connector) |
+| Server | `localhost:10389`, bind `uid=admin,ou=system` / `secret` (ApacheDS defaults) |
+| Users | `uid=<firstname.lastname>,ou=people,dc=example,dc=com` |
+| Object classes | top, person, organizationalPerson, inetOrgPerson |
+| Initial password | `Welcome@<employeeNumber>` (lab only) |
+
+Files:
+
+- `ldif/ApacheDS-ou-people.ldif`: creates `ou=people,dc=example,dc=com`
+- `config/Application/Application-LDAP_ApacheDS.xml`: connection, schema and **Create Account policy**
+- `config/Rule/Rule-LDAP_ApacheDS-Correlation.xml`: links LDAP accounts to identities by employeeNumber
+- `config/Rule/Rule-LDAP_ApacheDS-ProvisionAccount.xml`: creates the account for one Active identity
+- `config/Rule/Rule-LDAP_ApacheDS-ProvisionActiveUsers.xml`: creates accounts for all Active identities without one
+- `config/TaskDefinition/TaskDefinition-LDAP_ApacheDS-Aggregation.xml`
+
+When an identity's Status changes to **Active**, the workflow *HR Lifecycle - Status Change Notification*
+creates the LDAP account and includes the result in the email.
+
+Setup:
+
+1. In Apache Directory Studio, import `ldif/ApacheDS-ou-people.ldif` under `dc=example,dc=com`.
+2. Import `config/init-HR-CSV.xml` (or the LDAP files above, rules first).
+3. Open **Applications > LDAP ApacheDS > Configuration**, re-enter the bind password, and click **Test Connection**.
+4. Run `rule "LDAP ApacheDS - Provision Active Users"` to create accounts for everyone already Active.
+5. Run **LDAP ApacheDS - Account Aggregation** so IIQ reads the accounts back.
 
