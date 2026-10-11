@@ -21,6 +21,8 @@
   <ImportAction name="include" value="TaskDefinition/TaskDefinition-LDAP_ApacheDS-Aggregation.xml"/>
   <ImportAction name="include" value="Bundle/Bundle-LDAP_ApacheDS-ITRoles.xml"/>
   <ImportAction name="include" value="Bundle/Bundle-Birthright-BusinessRoles.xml"/>
+  <ImportAction name="include" value="ManagedAttribute/ManagedAttribute-LDAP_Office365Access.xml"/>
+  <ImportAction name="include" value="Bundle/Bundle-Office365Access.xml"/>
   <ImportAction name="include" value="EmailTemplate/EmailTemplate-HR_Lifecycle-StatusChange.xml"/>
   <ImportAction name="include" value="Workflow/Workflow-HR_Lifecycle-StatusChange.xml"/>
   <ImportAction name="include" value="IdentityTrigger/IdentityTrigger-HR_Lifecycle-StatusChange.xml"/>

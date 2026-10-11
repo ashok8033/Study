@@ -38,3 +38,10 @@ objectClass: groupOfUniqueNames
 cn: Managers
 description: Active managers, isManager = Y (Birthright - Managers)
 uniqueMember: uid=admin,ou=system
+
+dn: cn=Office365Access,ou=groups,dc=example,dc=com
+objectClass: top
+objectClass: groupOfUniqueNames
+cn: Office365Access
+description: Office 365 access (requestable role "Office365 Access")
+uniqueMember: uid=admin,ou=system

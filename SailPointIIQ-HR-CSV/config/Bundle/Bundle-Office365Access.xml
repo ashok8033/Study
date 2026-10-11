@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sailpoint PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  Requestable role "Office365 Access".
+
+  - "LDAP - Office365Access" (IT role) holds the ONE entitlement:
+        LDAP ApacheDS  groups = cn=Office365Access,ou=groups,dc=example,dc=com
+  - "Office365 Access" (business role) is what users request. It has no
+    assignment rule (Selector), so nobody gets it automatically - it is only
+    given through an access request (Manage Access) or by an administrator.
+
+  Approving the request provisions the IT role: the user is added to
+  cn=Office365Access (and gets an LDAP account first if they have none).
+-->
+<sailpoint>
+
+  <Bundle displayName="LDAP - Office365Access" name="LDAP - Office365Access" type="it">
+    <Description>Membership of cn=Office365Access in LDAP ApacheDS.</Description>
+    <Owner>
+      <Reference class="sailpoint.object.Identity" name="spadmin"/>
+    </Owner>
+    <Profiles>
+      <Profile>
+        <ApplicationRef>
+          <Reference class="sailpoint.object.Application" name="LDAP ApacheDS"/>
+        </ApplicationRef>
+        <Constraints>
+          <Filter operation="CONTAINS_ALL" property="groups">
+            <Value>
+              <List>
+                <String>cn=Office365Access,ou=groups,dc=example,dc=com</String>
+              </List>
+            </Value>
+          </Filter>
+        </Constraints>
+      </Profile>
+    </Profiles>
+  </Bundle>
+
+  <Bundle displayName="Office365 Access" name="Office365 Access" type="business">
+    <Description>Requestable access to Office 365 (LDAP group Office365Access). Request it in Manage Access.</Description>
+    <Owner>
+      <Reference class="sailpoint.object.Identity" name="spadmin"/>
+    </Owner>
+    <Requirements>
+      <Reference class="sailpoint.object.Bundle" name="LDAP - Office365Access"/>
+    </Requirements>
+  </Bundle>
+
+</sailpoint>

@@ -150,3 +150,26 @@ Setup:
 4. If LDAP accounts already exist, run **LDAP ApacheDS - Account Aggregation** first so IIQ knows about them.
 5. Run **HR Lifecycle - Daily Identity Refresh**. Active identities get the roles, an LDAP account and their groups.
 6. Run **LDAP ApacheDS - Account Aggregation** to read the accounts and group memberships back.
+
+## Requestable role: Office365 Access
+
+| Role | Type | How it is given | Entitlement |
+|---|---|---|---|
+| Office365 Access | business | **Request only** (no assignment rule) | via the IT role below |
+| LDAP - Office365Access | IT | required by Office365 Access | LDAP ApacheDS `groups` = `cn=Office365Access,ou=groups,dc=example,dc=com` |
+
+Files:
+
+- `ldif/ApacheDS-group-Office365Access.ldif`: the LDAP group (also added to `ApacheDS-ou-people-and-groups.ldif`)
+- `config/ManagedAttribute/ManagedAttribute-LDAP_Office365Access.xml`: the entitlement in the catalog, requestable
+- `config/Bundle/Bundle-Office365Access.xml`: the IT role and the requestable business role
+
+Setup:
+
+1. Import `ldif/ApacheDS-group-Office365Access.ldif` in Apache Directory Studio.
+2. Import `config/ManagedAttribute/ManagedAttribute-LDAP_Office365Access.xml`, then `config/Bundle/Bundle-Office365Access.xml`.
+3. Request it: **Manage Access > Request Access**, pick a user, search for *Office365 Access*, submit.
+   Requesting needs Lifecycle Manager; without it, assign the role to an identity as an administrator
+   (Identities > open the identity > Roles / Entitlements, or Setup > Roles).
+4. After approval the user is added to `cn=Office365Access`. Run **LDAP ApacheDS - Account Aggregation** to read it back.
+
