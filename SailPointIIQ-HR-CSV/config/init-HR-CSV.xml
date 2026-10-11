@@ -15,9 +15,8 @@
   <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_CSV-Aggregation.xml"/>
   <ImportAction name="include" value="Application/Application-LDAP_ApacheDS.xml"/>
   <ImportAction name="include" value="TaskDefinition/TaskDefinition-LDAP_ApacheDS-Aggregation.xml"/>
-  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-ProvisionAccount.xml"/>
-  <!-- Run once for people already Active: rule "LDAP ApacheDS - Provision Active Users" -->
-  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-ProvisionActiveUsers.xml"/>
+  <ImportAction name="include" value="Bundle/Bundle-LDAP_ApacheDS-ITRoles.xml"/>
+  <ImportAction name="include" value="Bundle/Bundle-Birthright-BusinessRoles.xml"/>
   <ImportAction name="include" value="EmailTemplate/EmailTemplate-HR_Lifecycle-StatusChange.xml"/>
   <ImportAction name="include" value="Workflow/Workflow-HR_Lifecycle-StatusChange.xml"/>
   <ImportAction name="include" value="IdentityTrigger/IdentityTrigger-HR_Lifecycle-StatusChange.xml"/>

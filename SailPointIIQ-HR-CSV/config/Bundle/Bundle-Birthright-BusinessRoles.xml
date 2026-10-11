@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sailpoint PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  Birthright business roles. Each has an assignment rule (Selector) on identity
+  attributes and requires one IT role. They are assigned, provisioned and
+  removed by an identity refresh with "Provision assignments" ticked
+  (the task "HR Lifecycle - Daily Identity Refresh").
+
+  When an identity stops matching (e.g. status becomes Terminated) the role is
+  removed and the LDAP group membership is taken away.
+-->
+<sailpoint>
+
+  <Bundle displayName="Birthright - All Active Users" name="Birthright - All Active Users" type="business">
+    <Description>Every identity whose Status is Active gets LDAP access (account + AllEmployees group).</Description>
+    <Owner>
+      <Reference class="sailpoint.object.Identity" name="spadmin"/>
+    </Owner>
+    <Requirements>
+      <Reference class="sailpoint.object.Bundle" name="LDAP - All Employees"/>
+    </Requirements>
+    <Selector>
+      <IdentitySelector>
+        <MatchExpression>
+          <MatchTerm name="status" value="Active"/>
+        </MatchExpression>
+      </IdentitySelector>
+    </Selector>
+  </Bundle>
+
+  <Bundle displayName="Birthright - Contractors" name="Birthright - Contractors" type="business">
+    <Description>Active contractors get the LDAP Contractors group.</Description>
+    <Owner>
+      <Reference class="sailpoint.object.Identity" name="spadmin"/>
+    </Owner>
+    <Requirements>
+      <Reference class="sailpoint.object.Bundle" name="LDAP - Contractors"/>
+    </Requirements>
+    <Selector>
+      <IdentitySelector>
+        <MatchExpression and="true">
+          <MatchTerm name="status" value="Active"/>
+          <MatchTerm name="employeeType" value="Contractor"/>
+        </MatchExpression>
+      </IdentitySelector>
+    </Selector>
+  </Bundle>
+
+  <Bundle displayName="Birthright - Managers" name="Birthright - Managers" type="business">
+    <Description>Active managers (isManager = Y) get the LDAP Managers group.</Description>
+    <Owner>
+      <Reference class="sailpoint.object.Identity" name="spadmin"/>
+    </Owner>
+    <Requirements>
+      <Reference class="sailpoint.object.Bundle" name="LDAP - Managers"/>
+    </Requirements>
+    <Selector>
+      <IdentitySelector>
+        <MatchExpression and="true">
+          <MatchTerm name="status" value="Active"/>
+          <MatchTerm name="isManager" value="Y"/>
+        </MatchExpression>
+      </IdentitySelector>
+    </Selector>
+  </Bundle>
+
+</sailpoint>

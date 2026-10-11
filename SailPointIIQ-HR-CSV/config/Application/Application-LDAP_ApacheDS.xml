@@ -8,7 +8,11 @@
     port        10389 (plain LDAP, no SSL)
     bind user   uid=admin,ou=system
     password    secret          <- change it, then set it again in the UI
-    users go to ou=people,dc=example,dc=com  (create it with ldif/ApacheDS-ou-people.ldif)
+    users go to ou=people,dc=example,dc=com, groups are in ou=groups
+    (create both with ldif/ApacheDS-ou-people-and-groups.ldif)
+
+  Group membership: groupOfUniqueNames, member attribute uniqueMember.
+  The account attribute "groups" is the entitlement the IT roles grant.
 
   The password below is plain text for a first import. After importing, open
   the application in the UI and re-enter it so IIQ stores it encrypted.
@@ -36,6 +40,19 @@
             <Map>
               <entry key="searchDN" value="ou=people,dc=example,dc=com"/>
               <entry key="iterateSearchFilter" value="(objectClass=inetOrgPerson)"/>
+              <entry key="searchScope" value="SUBTREE"/>
+            </Map>
+          </List>
+        </value>
+      </entry>
+      <!-- Groups (groupOfUniqueNames / uniqueMember) -->
+      <entry key="groupMemberAttribute" value="uniqueMember"/>
+      <entry key="group.searchDNs">
+        <value>
+          <List>
+            <Map>
+              <entry key="searchDN" value="ou=groups,dc=example,dc=com"/>
+              <entry key="iterateSearchFilter" value="(objectClass=groupOfUniqueNames)"/>
               <entry key="searchScope" value="SUBTREE"/>
             </Map>
           </List>
@@ -225,6 +242,15 @@
       <AttributeDefinition name="employeeType" type="string"/>
       <AttributeDefinition name="title" type="string"/>
       <AttributeDefinition multi="true" name="objectClass" type="string"/>
+      <!-- Entitlement granted by the IT roles: DNs of the groupOfUniqueNames groups -->
+      <AttributeDefinition entitlement="true" managed="true" multi="true" name="groups" schemaObjectType="group" type="string">
+        <Description>Group memberships (DN of each group)</Description>
+      </AttributeDefinition>
+    </Schema>
+    <Schema displayAttribute="cn" identityAttribute="dn" instanceAttribute=""
+            nativeObjectType="groupOfUniqueNames" objectType="group">
+      <AttributeDefinition name="cn" type="string"/>
+      <AttributeDefinition name="description" type="string"/>
     </Schema>
   </Schemas>
 </Application>

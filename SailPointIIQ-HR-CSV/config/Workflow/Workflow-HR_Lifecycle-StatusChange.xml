@@ -3,8 +3,8 @@
 <!--
   Launched by the "HR Lifecycle - Status Change" lifecycle event whenever the
   identity attribute "status" changes (PreHire / Active / Terminated).
-  When the new status is Active, creates the LDAP ApacheDS account
-  (rule "LDAP ApacheDS - Provision Account"). Sends an email to notifyEmail.
+  Sends an email to notifyEmail. (LDAP access is handled by the birthright
+  roles during the identity refresh, not by this workflow.)
 -->
 <Workflow explicitTransitions="true" name="HR Lifecycle - Status Change Notification" type="IdentityLifecycle">
 
@@ -28,7 +28,6 @@
   <Variable name="endDate"/>
   <Variable name="jobDescription"/>
   <Variable name="managerName"/>
-  <Variable name="ldapResult"/>
 
   <Description>Emails a notification when an identity moves between lifecycle states.</Description>
 
@@ -63,23 +62,6 @@
         }
       ]]></Source>
     </Script>
-    <!-- Joiner: becoming Active creates the LDAP account -->
-    <Transition to="Provision LDAP">
-      <Script>
-        <Source><![CDATA[
-          return "Active".equals(newStatus);
-        ]]></Source>
-      </Script>
-    </Transition>
-    <Transition to="Check Notify"/>
-  </Step>
-
-  <Step action="rule:LDAP ApacheDS - Provision Account" icon="Provision" name="Provision LDAP" resultVariable="ldapResult">
-    <Arg name="identityName" value="ref:identityName"/>
-    <Transition to="Check Notify"/>
-  </Step>
-
-  <Step icon="Task" name="Check Notify">
     <!-- Only notify on a real move between two lifecycle states -->
     <Transition to="Send Email">
       <Script>
@@ -102,7 +84,6 @@
     <Arg name="endDate" value="ref:endDate"/>
     <Arg name="jobDescription" value="ref:jobDescription"/>
     <Arg name="managerName" value="ref:managerName"/>
-    <Arg name="ldapResult" value="ref:ldapResult"/>
     <Transition to="Stop"/>
   </Step>
 
