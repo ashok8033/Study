@@ -134,6 +134,10 @@ Files:
 - `ldif/ApacheDS-ou-people-and-groups.ldif`: `ou=people`, `ou=groups` and the three groups
 - `config/Application/Application-LDAP_ApacheDS.xml`: connection, account and group schema, **Create Account policy**
 - `config/Rule/Rule-LDAP_ApacheDS-Correlation.xml`: links LDAP accounts to identities by employeeNumber
+- `config/Rule/Rule-LDAP_ApacheDS-Library.xml`: shared LDAP (JNDI) functions for group membership
+- `config/Rule/Rule-LDAP_ApacheDS-BeforeProvisioning.xml`: takes `groups` out of the LDAP request
+- `config/Rule/Rule-LDAP_ApacheDS-AfterProvisioning.xml`: adds/removes the user in each group's `uniqueMember`
+- `config/Rule/Rule-LDAP_ApacheDS-Customization.xml`: reads each account's groups during aggregation
 - `config/Bundle/Bundle-LDAP_ApacheDS-ITRoles.xml`: the three IT roles
 - `config/Bundle/Bundle-Birthright-BusinessRoles.xml`: the three business roles with assignment rules
 - `config/TaskDefinition/TaskDefinition-LDAP_ApacheDS-Aggregation.xml`

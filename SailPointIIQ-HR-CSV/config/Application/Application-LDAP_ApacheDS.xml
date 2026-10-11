@@ -12,7 +12,10 @@
     (create both with ldif/ApacheDS-ou-people-and-groups.ldif)
 
   Group membership: groupOfUniqueNames, member attribute uniqueMember.
-  The account attribute "groups" is the entitlement the IT roles grant.
+  The account attribute "groups" is the entitlement the IT roles grant. ApacheDS
+  has no "groups" attribute, so the Before/After Provisioning rules turn group
+  changes into uniqueMember changes on the groups, and the Customization rule
+  reads the memberships back during aggregation.
 
   The password below is plain text for a first import. After importing, open
   the application in the UI and re-enter it so IIQ stores it encrypted.
@@ -23,6 +26,11 @@
              name="LDAP ApacheDS"
              profileClass=""
              type="LDAP">
+  <!-- Applies the group (uniqueMember) changes after the account is created/updated -->
+  <AfterProvisioningRule>
+    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - After Provisioning"/>
+  </AfterProvisioningRule>
+
   <Attributes>
     <Map>
       <entry key="host" value="localhost"/>
@@ -63,10 +71,20 @@
     </Map>
   </Attributes>
 
+  <!-- Takes "groups" out of the LDAP request (ApacheDS has no such attribute) -->
+  <BeforeProvisioningRule>
+    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - Before Provisioning"/>
+  </BeforeProvisioningRule>
+
   <!-- LDAP accounts carry employeeNumber, which is the IIQ identity name -->
   <CorrelationRule>
     <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - Correlation"/>
   </CorrelationRule>
+
+  <!-- Reads each account's group memberships during aggregation -->
+  <CustomizationRule>
+    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - Customization"/>
+  </CustomizationRule>
 
   <Owner>
     <Reference class="sailpoint.object.Identity" name="spadmin"/>

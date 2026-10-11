@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="LDAP ApacheDS - Customization" type="ResourceObjectCustomization">
+  <Description>
+    Runs for every account read during LDAP ApacheDS aggregation. Looks up the
+    groups whose uniqueMember contains the account DN and puts them in the
+    "groups" attribute, so IIQ sees the memberships (and the IT roles are
+    detected as met). One connection is reused for the whole aggregation.
+  </Description>
+  <Signature returnType="ResourceObject">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="object" type="ResourceObject"/>
+      <Argument name="application" type="Application"/>
+      <Argument name="connector"/>
+      <Argument name="state"/>
+    </Inputs>
+    <Returns>
+      <Argument name="object" type="ResourceObject"/>
+    </Returns>
+  </Signature>
+  <ReferencedRules>
+    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - Library"/>
+  </ReferencedRules>
+  <Source><![CDATA[
+  import javax.naming.directory.DirContext;
+  import sailpoint.object.ResourceObject;
+
+  if (object == null || !"account".equals(object.getObjectType())) return object;
+
+  try {
+      DirContext ldap = (state == null) ? null : (DirContext) state.get("hrLdapContext");
+      if (ldap == null) {
+          ldap = ldapConnect(context, application);
+          if (state != null) state.put("hrLdapContext", ldap);
+      }
+      object.setAttribute("groups", ldapGroupsOf(ldap, object.getIdentity()));
+  } catch (Exception e) {
+      log.error("LDAP ApacheDS: could not read groups for " + object.getIdentity() + ": " + e);
+  }
+  return object;
+  ]]></Source>
+</Rule>

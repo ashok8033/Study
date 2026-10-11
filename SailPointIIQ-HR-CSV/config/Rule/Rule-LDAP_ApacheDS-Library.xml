@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="LDAP ApacheDS - Library">
+  <Description>
+    Shared functions for LDAP ApacheDS group membership, used by the Before /
+    After Provisioning rules and the Customization rule. Talks to ApacheDS
+    directly with JNDI, using the host, port, user and password configured on
+    the LDAP ApacheDS application.
+  </Description>
+  <Source><![CDATA[
+  import java.util.ArrayList;
+  import java.util.Hashtable;
+  import java.util.List;
+  import javax.naming.Context;
+  import javax.naming.NamingEnumeration;
+  import javax.naming.directory.AttributeInUseException;
+  import javax.naming.directory.BasicAttribute;
+  import javax.naming.directory.DirContext;
+  import javax.naming.directory.InitialDirContext;
+  import javax.naming.directory.ModificationItem;
+  import javax.naming.directory.NoSuchAttributeException;
+  import javax.naming.directory.SearchControls;
+  import javax.naming.directory.SearchResult;
+
+  // Group container and membership attribute (change here if your layout differs):
+  //   groups under  ou=groups,dc=example,dc=com
+  //   member attr   uniqueMember
+
+  // Opens a connection using the application's own connection settings
+  DirContext ldapConnect(Object ctxArg, Object app) {
+      String password = app.getStringAttributeValue("password");
+      try {
+          password = ctxArg.decrypt(password);
+      } catch (Exception e) {
+          // value was not encrypted; use it as it is
+      }
+      Hashtable env = new Hashtable();
+      env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+      env.put(Context.PROVIDER_URL, "ldap://" + app.getStringAttributeValue("host") + ":"
+                                    + app.getStringAttributeValue("port"));
+      env.put(Context.SECURITY_AUTHENTICATION, "simple");
+      env.put(Context.SECURITY_PRINCIPAL, app.getStringAttributeValue("user"));
+      env.put(Context.SECURITY_CREDENTIALS, password);
+      return new InitialDirContext(env);
+  }
+
+  // Adds (add=true) or removes a user DN from a group. Already a member /
+  // not a member are treated as success.
+  void ldapSetMember(DirContext ldap, String groupDn, String userDn, boolean add) {
+      int op = add ? DirContext.ADD_ATTRIBUTE : DirContext.REMOVE_ATTRIBUTE;
+      ModificationItem[] mods = new ModificationItem[1];
+      mods[0] = new ModificationItem(op, new BasicAttribute("uniqueMember", userDn));
+      try {
+          ldap.modifyAttributes(groupDn, mods);
+      } catch (AttributeInUseException e) {
+          // already a member
+      } catch (NoSuchAttributeException e) {
+          // was not a member
+      }
+  }
+
+  // Returns the DNs of the groups under ou=groups,dc=example,dc=com that contain userDn
+  List ldapGroupsOf(DirContext ldap, String userDn) {
+      List groups = new ArrayList();
+      SearchControls sc = new SearchControls();
+      sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
+      sc.setReturningAttributes(new String[0]);
+      Object[] args = new Object[1];
+      args[0] = userDn;
+      NamingEnumeration results = ldap.search("ou=groups,dc=example,dc=com",
+              "(uniqueMember={0})", args, sc);
+      while (results.hasMore()) {
+          SearchResult r = (SearchResult) results.next();
+          groups.add(r.getNameInNamespace());
+      }
+      return groups;
+  }
+  ]]></Source>
+</Rule>
