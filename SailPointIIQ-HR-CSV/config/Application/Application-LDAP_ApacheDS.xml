@@ -8,8 +8,8 @@
     port        10389 (plain LDAP, no SSL)
     bind user   uid=admin,ou=system
     password    secret          <- change it, then set it again in the UI
-    users go to ou=people,dc=example,dc=com, groups are in ou=groups
-    (create both with ldif/ApacheDS-ou-people-and-groups.ldif)
+    users go to ou=users,ou=system, groups are in ou=groups,ou=system
+    (both exist in a default ApacheDS; create the groups with ldif/ApacheDS-groups.ldif)
 
   Group membership: groupOfUniqueNames, member attribute uniqueMember.
   The account attribute "groups" is the entitlement the IT roles grant.
@@ -38,7 +38,7 @@
         <value>
           <List>
             <Map>
-              <entry key="searchDN" value="ou=people,dc=example,dc=com"/>
+              <entry key="searchDN" value="ou=users,ou=system"/>
               <entry key="iterateSearchFilter" value="(objectClass=inetOrgPerson)"/>
               <entry key="searchScope" value="SUBTREE"/>
             </Map>
@@ -51,7 +51,7 @@
         <value>
           <List>
             <Map>
-              <entry key="searchDN" value="ou=groups,dc=example,dc=com"/>
+              <entry key="searchDN" value="ou=groups,ou=system"/>
               <entry key="iterateSearchFilter" value="(objectClass=groupOfUniqueNames)"/>
               <entry key="searchScope" value="SUBTREE"/>
             </Map>
@@ -69,7 +69,7 @@
       <entry key="sysDescriptions">
         <value>
           <Map>
-            <entry key="en_US" value="Apache Directory Server - user accounts under ou=people,dc=example,dc=com"/>
+            <entry key="en_US" value="Apache Directory Server - user accounts under ou=users,ou=system"/>
           </Map>
         </value>
       </entry>
@@ -88,7 +88,7 @@
   <!-- ============================================================
        CREATE ACCOUNT POLICY
        uid  = firstname.lastname (lower case), made unique with 2, 3, ...
-       dn   = uid=<uid>,ou=people,dc=example,dc=com
+       dn   = uid=<uid>,ou=users,ou=system
        ============================================================ -->
   <ProvisioningForms>
     <Form name="LDAP ApacheDS - Create Account Policy" objectType="account" type="Create">
@@ -117,7 +117,7 @@
               String uid = base;
               int n = 2;
               while (app != null) {
-                  String dn = "uid=" + uid + ",ou=people,dc=example,dc=com";
+                  String dn = "uid=" + uid + ",ou=users,ou=system";
                   QueryOptions qo = new QueryOptions();
                   qo.addFilter(Filter.eq("application", app));
                   qo.addFilter(Filter.ignoreCase(Filter.eq("nativeIdentity", dn)));
@@ -134,7 +134,7 @@
           <Script>
             <Source><![CDATA[
               // "uid" is the value calculated by the field above
-              return "uid=" + uid + ",ou=people,dc=example,dc=com";
+              return "uid=" + uid + ",ou=users,ou=system";
             ]]></Source>
           </Script>
         </Field>
