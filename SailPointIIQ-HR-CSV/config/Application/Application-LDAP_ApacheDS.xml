@@ -26,13 +26,13 @@
              name="LDAP ApacheDS"
              profileClass=""
              type="LDAP">
-  <!-- Applies the group (uniqueMember) changes after the account is created/updated -->
-  <AfterProvisioningRule>
-    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - After Provisioning"/>
-  </AfterProvisioningRule>
-
   <Attributes>
     <Map>
+      <!-- Provisioning rules are set by name in the application attributes.
+           Before: takes "groups" out of the LDAP request (ApacheDS has no such attribute).
+           After:  applies the group changes as uniqueMember on each group. -->
+      <entry key="beforeProvisioningRule" value="LDAP ApacheDS - Before Provisioning"/>
+      <entry key="afterProvisioningRule" value="LDAP ApacheDS - After Provisioning"/>
       <entry key="host" value="localhost"/>
       <entry key="port" value="10389"/>
       <entry key="useSSL">
@@ -70,11 +70,6 @@
       </entry>
     </Map>
   </Attributes>
-
-  <!-- Takes "groups" out of the LDAP request (ApacheDS has no such attribute) -->
-  <BeforeProvisioningRule>
-    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - Before Provisioning"/>
-  </BeforeProvisioningRule>
 
   <!-- LDAP accounts carry employeeNumber, which is the IIQ identity name -->
   <CorrelationRule>
