@@ -45,19 +45,6 @@
           </List>
         </value>
       </entry>
-      <!-- Groups (groupOfUniqueNames / uniqueMember) -->
-      <entry key="groupMemberAttribute" value="uniqueMember"/>
-      <entry key="group.searchDNs">
-        <value>
-          <List>
-            <Map>
-              <entry key="searchDN" value="ou=groups,dc=example,dc=com"/>
-              <entry key="iterateSearchFilter" value="(objectClass=groupOfUniqueNames)"/>
-              <entry key="searchScope" value="SUBTREE"/>
-            </Map>
-          </List>
-        </value>
-      </entry>
       <entry key="authSearchAttributes">
         <value>
           <List>
@@ -247,10 +234,29 @@
         <Description>Group memberships (DN of each group)</Description>
       </AttributeDefinition>
     </Schema>
+    <!-- Group object type. The membership settings live HERE (not in the
+         application settings): the connector turns the account attribute
+         "groups" into uniqueMember changes on these groups. -->
     <Schema displayAttribute="cn" identityAttribute="dn" instanceAttribute=""
             nativeObjectType="groupOfUniqueNames" objectType="group">
       <AttributeDefinition name="cn" type="string"/>
       <AttributeDefinition name="description" type="string"/>
+      <Attributes>
+        <Map>
+          <entry key="groupMemberAttribute" value="uniqueMember"/>
+          <entry key="searchDNs">
+            <value>
+              <List>
+                <Map>
+                  <entry key="searchDN" value="ou=groups,dc=example,dc=com"/>
+                  <entry key="iterateSearchFilter" value="(objectClass=groupOfUniqueNames)"/>
+                  <entry key="searchScope" value="SUBTREE"/>
+                </Map>
+              </List>
+            </value>
+          </entry>
+        </Map>
+      </Attributes>
     </Schema>
   </Schemas>
 </Application>
