@@ -215,3 +215,19 @@ Setup:
 3. Run `rule "HR CSV - Show Attributes On Identity Page"`, then log out and back in.
 4. Run the HR aggregation and **HR Lifecycle - Daily Identity Refresh**.
 
+## Aggregating a single account
+
+`config/Rule/Rule-Aggregate-Single-Account.xml` re-reads **one** account and runs it through the normal
+aggregation (customization rule, correlation, attribute promotion). It works for both applications:
+LDAP fetches the account directly; for the HR CSV the file is read and only the matching row is used.
+
+Edit `APP_NAME` and `ACCOUNT_ID` at the top of the rule (defaults: `HR Authoritative CSV` / `1000`), then:
+
+```
+rule "Aggregate Single Account"
+```
+
+Account IDs: HR CSV = employeeNumber (`1000`); LDAP = DN (`uid=ashok.kumar,ou=people,dc=example,dc=com`).
+For LDAP you can also use the refresh icon on the account in Identity > Application Accounts.
+Afterwards run **HR Lifecycle - Daily Identity Refresh** if roles or LDAP sync should follow.
+

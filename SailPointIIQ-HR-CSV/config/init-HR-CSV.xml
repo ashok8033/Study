@@ -34,6 +34,8 @@
   <ImportAction name="include" value="Rule/Rule-HR_CSV-ShowOnIdentityPage.xml"/>
   <!-- Read-only troubleshooting: rule "HR CSV - Diagnose" -->
   <ImportAction name="include" value="Rule/Rule-HR_CSV-Diagnose.xml"/>
+  <!-- Targeted aggregation of one account: rule "Aggregate Single Account" -->
+  <ImportAction name="include" value="Rule/Rule-Aggregate-Single-Account.xml"/>
   <!-- Troubleshooting: rule "HR Lifecycle - Send Test Email" -->
   <ImportAction name="include" value="Rule/Rule-HR_Lifecycle-SendTestEmail.xml"/>
 </sailpoint>

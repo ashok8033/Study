@@ -1,0 +1,105 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="Aggregate Single Account">
+  <Description>
+    Targeted aggregation of ONE account, for any application. The account goes
+    through the normal aggregation pipeline (customization rule, correlation,
+    identity creation, attribute promotion), exactly as in a full aggregation.
+
+    How the account is read:
+      - Applications that can fetch one account (LDAP ApacheDS): connector.getObject
+      - Applications that cannot (HR Authoritative CSV, a delimited file):
+        the file is read and only the matching row is kept
+
+    Edit APP_NAME and ACCOUNT_ID below, then run from the IIQ console:
+        rule "Aggregate Single Account"
+    Or call it with arguments appName and accountId, e.g. from another rule or a workflow:
+        context.runRule(rule, {"appName": "...", "accountId": "..."})
+
+    ACCOUNT_ID is the account's native identity:
+      HR Authoritative CSV : the employeeNumber, e.g. 1000
+      LDAP ApacheDS        : the DN, e.g. uid=ashok.kumar,ou=people,dc=example,dc=com
+  </Description>
+  <Signature returnType="String">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="appName" type="String"/>
+      <Argument name="accountId" type="String"/>
+    </Inputs>
+    <Returns>
+      <Argument name="result" type="String"/>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+  import sailpoint.api.Aggregator;
+  import sailpoint.connector.Connector;
+  import sailpoint.connector.ConnectorFactory;
+  import sailpoint.object.Application;
+  import sailpoint.object.Attributes;
+  import sailpoint.object.ResourceObject;
+  import sailpoint.object.TaskResult;
+  import sailpoint.tools.CloseableIterator;
+
+  // Defaults used when run from the console without arguments
+  String APP_NAME   = "HR Authoritative CSV";
+  String ACCOUNT_ID = "1000";
+
+  String app_name = (void == appName || appName == null) ? APP_NAME : appName;
+  String acct_id  = (void == accountId || accountId == null) ? ACCOUNT_ID : accountId;
+
+  Application app = context.getObjectByName(Application.class, app_name);
+  if (app == null) {
+      return "ERROR: application '" + app_name + "' not found";
+  }
+
+  Connector connector = ConnectorFactory.getConnector(app, null);
+  ResourceObject account = null;
+
+  // 1. Fetch just this account if the connector supports it
+  try {
+      account = connector.getObject("account", acct_id, null);
+  } catch (Exception e) {
+      log.debug("getObject not supported for " + app_name + ", scanning instead: " + e);
+  }
+
+  // 2. Otherwise read all accounts and keep the matching one (delimited files)
+  if (account == null) {
+      CloseableIterator it = connector.iterateObjects("account", null, null);
+      try {
+          while (it.hasNext()) {
+              ResourceObject ro = (ResourceObject) it.next();
+              if (acct_id.equalsIgnoreCase(ro.getIdentity())) {
+                  account = ro;
+                  break;
+              }
+          }
+      } finally {
+          it.close();
+      }
+  }
+
+  if (account == null) {
+      return "ERROR: account '" + acct_id + "' not found in " + app_name;
+  }
+
+  // 3. Aggregate it. noOptimizeReaggregation makes IIQ apply it even if it
+  //    thinks nothing changed.
+  Attributes args = new Attributes();
+  args.put("noOptimizeReaggregation", "true");
+  args.put("promoteAttributes", "true");
+  Aggregator aggregator = new Aggregator(context, args);
+  TaskResult result = aggregator.aggregate(app, account);
+
+  String summary = "Aggregated " + app_name + " account " + acct_id;
+  if (result != null) {
+      summary += " | created=" + result.getAttribute("created")
+               + " updated=" + result.getAttribute("updated")
+               + " total=" + result.getAttribute("total");
+      if (result.getErrors() != null && !result.getErrors().isEmpty()) {
+          summary += " | ERRORS: " + result.getErrors();
+      }
+  }
+  return summary + "\nAccount attributes read: " + account.getAttributes();
+  ]]></Source>
+</Rule>
