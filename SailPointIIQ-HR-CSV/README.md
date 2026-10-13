@@ -257,6 +257,8 @@ server configuration > Password Policy).
 
 - `docs/SailPointIIQ_HR_LDAP_HLD.pdf` - High-Level Design (scope, architecture, identity and access model, lifecycle, decisions, risks)
 - `docs/SailPointIIQ_HR_LDAP_LLD.pdf` - Low-Level Design (applications, schemas, rules, roles, workflow, tasks, runbook, test cases, troubleshooting)
+- `docs/SailPointIIQ_HR_LDAP_Developer_Guide.pdf` - Developer Guide: how the source code works (execution order, every rule explained, how to extend, conventions, debugging)
 
-Rebuild them after changes with `python3 docs/make_docs.py docs` (needs `reportlab`).
+Rebuild them after changes (needs `reportlab`), from the `docs` folder:
+`python3 make_docs.py .` (HLD + LLD) and `python3 make_dev_guide.py .` (Developer Guide).
 

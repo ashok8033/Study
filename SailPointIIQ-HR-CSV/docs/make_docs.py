@@ -9,7 +9,6 @@ from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.platypus import (KeepTogether, PageBreak, Paragraph, SimpleDocTemplate,
                                 Spacer, Table, TableStyle, Preformatted)
 
-OUT_DIR = sys.argv[1]
 VERSION = "1.0"
 DATE = "13-10-2026"
 AUTHOR = "Ashok Kumar"
@@ -447,6 +446,8 @@ def build_lld(path):
     doc.build(glue_headings(s), onFirstPage=footer("LLD"), onLaterPages=footer("LLD"))
 
 
-build_hld(f"{OUT_DIR}/SailPointIIQ_HR_LDAP_HLD.pdf")
-build_lld(f"{OUT_DIR}/SailPointIIQ_HR_LDAP_LLD.pdf")
-print("done")
+if __name__ == "__main__":
+    OUT_DIR = sys.argv[1]
+    build_hld(f"{OUT_DIR}/SailPointIIQ_HR_LDAP_HLD.pdf")
+    build_lld(f"{OUT_DIR}/SailPointIIQ_HR_LDAP_LLD.pdf")
+    print("done")
