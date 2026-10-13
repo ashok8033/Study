@@ -10,6 +10,7 @@
   <ImportAction name="include" value="Rule/Rule-HR_CSV-ManagerCorrelation.xml"/>
   <ImportAction name="include" value="Rule/Rule-HR_CSV-IdentityCreation.xml"/>
   <ImportAction name="include" value="Rule/Rule-HR_Lifecycle-StatusAttribute.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-DisplayName.xml"/>
   <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-Correlation.xml"/>
   <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-Library.xml"/>
   <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-BeforeProvisioning.xml"/>

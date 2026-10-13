@@ -22,6 +22,7 @@ config/Application/Application-HR_Authoritative_CSV.xml  app, schema, Create Acc
 config/TaskDefinition/TaskDefinition-HR_CSV-Aggregation.xml
 config/Rule/Rule-HR_CSV-SetupIdentityMappings.xml        adds the identity mappings + status attribute (run once)
 config/Rule/Rule-HR_Lifecycle-StatusAttribute.xml        global rule: calculates identity "status"
+config/Rule/Rule-HR_CSV-DisplayName.xml                  global rule: displayName = "firstName lastName" from HR
 config/Rule/Rule-HR_CSV-ShowOnIdentityPage.xml           shows HR attributes on View Identity (run once)
 config/Rule/Rule-HR_CSV-Diagnose.xml                     read-only troubleshooting report
 config/Rule/Rule-HR_Lifecycle-SendTestEmail.xml          prints mail settings and sends one test email

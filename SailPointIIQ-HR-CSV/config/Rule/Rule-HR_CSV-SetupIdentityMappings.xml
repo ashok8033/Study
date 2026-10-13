@@ -7,7 +7,9 @@
     Safe to run more than once: a mapping that already exists is skipped.
 
     Also creates the "status" identity attribute (PreHire / Active /
-    Terminated), calculated by the global rule "HR Lifecycle - Status Attribute".
+    Terminated), calculated by the global rule "HR Lifecycle - Status Attribute",
+    and sets "displayName" to be calculated by the global rule
+    "HR CSV - Display Name" ("firstName lastName" from HR).
 
     Run it from the IIQ console:   rule "HR CSV - Setup Identity Mappings"
     or from Debug > Rule > Run.    Import the Application and rules first.
@@ -116,6 +118,23 @@
   }
   statusAttr.setRule(statusRule);
   report.append("status <- global rule HR Lifecycle - Status Attribute\n");
+
+  // displayName recalculated from the HR first/last name, so name changes show up
+  Rule displayNameRule = context.getObjectByName(Rule.class, "HR CSV - Display Name");
+  if (displayNameRule == null) {
+      return "ERROR: rule 'HR CSV - Display Name' not found. Import it first.\n" + report;
+  }
+  ObjectAttribute dnAttr = oc.getObjectAttribute("displayName");
+  if (dnAttr == null) {
+      dnAttr = new ObjectAttribute();
+      dnAttr.setName("displayName");
+      dnAttr.setDisplayName("Display Name");
+      dnAttr.setType("string");
+      attrs.add(dnAttr);
+      report.append("Created identity attribute displayName\n");
+  }
+  dnAttr.setRule(displayNameRule);
+  report.append("displayName <- global rule HR CSV - Display Name\n");
 
   oc.setObjectAttributes(attrs);
   context.saveObject(oc);
