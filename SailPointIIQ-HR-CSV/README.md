@@ -182,6 +182,7 @@ operational attributes for each account and adds:
 | IIQ account attribute | From ApacheDS | Value |
 |---|---|---|
 | `accountStatus` | `pwdAccountLockedTime` | `Active` (not set), `Disabled` (`000001010000Z`, admin lock), `Locked` (any other time: failed logins) |
+| `pwdAccountLockedTime` | same | the raw ApacheDS value (`000001010000Z`, a timestamp, or empty) |
 | `IIQDisabled` / `IIQLocked` | same | IIQ's own disabled/locked flags, so the account shows as disabled or locked in the UI |
 | `lockedTime` | `pwdAccountLockedTime` | when it was locked by failed logins |
 | `lastFailedLogin` | `pwdFailureTime` | last failed login |

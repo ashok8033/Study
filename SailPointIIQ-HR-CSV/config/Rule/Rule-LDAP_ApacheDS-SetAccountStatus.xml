@@ -66,6 +66,7 @@
 
   // Reflect it in IIQ straight away
   link.setAttribute("accountStatus", disable ? "Disabled" : "Active");
+  link.setAttribute("pwdAccountLockedTime", disable ? "000001010000Z" : null);
   link.setAttribute("IIQDisabled", Boolean.valueOf(disable));
   context.saveObject(link);
   context.commitTransaction();

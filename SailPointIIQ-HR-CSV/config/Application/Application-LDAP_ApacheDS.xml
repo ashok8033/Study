@@ -247,6 +247,9 @@
       <AttributeDefinition name="accountStatus" type="string">
         <Description>Active, Disabled (admin lock) or Locked (failed logins)</Description>
       </AttributeDefinition>
+      <AttributeDefinition name="pwdAccountLockedTime" type="string">
+        <Description>Raw ApacheDS value: 000001010000Z = disabled (admin lock), a timestamp = locked, empty = active</Description>
+      </AttributeDefinition>
       <AttributeDefinition name="lockedTime" type="string">
         <Description>When the account was locked after failed logins (DD-MM-YYYY HH:mm:ss UTC)</Description>
       </AttributeDefinition>

@@ -62,6 +62,7 @@
           status = ADMIN_LOCK.equals(lockedTime) ? "Disabled" : "Locked";
       }
       object.setAttribute("accountStatus", status);
+      object.setAttribute("pwdAccountLockedTime", lockedTime);   // raw value, empty when active
       object.setAttribute("IIQDisabled", Boolean.valueOf("Disabled".equals(status)));
       object.setAttribute("IIQLocked", Boolean.valueOf("Locked".equals(status)));
       object.setAttribute("lockedTime",
