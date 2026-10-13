@@ -3,8 +3,10 @@
 <!--
   Launched by the "HR Lifecycle - Status Change" lifecycle event whenever the
   identity attribute "status" changes (PreHire / Active / Terminated).
-  Sends an email to notifyEmail. (LDAP access is handled by the birthright
-  roles during the identity refresh, not by this workflow.)
+  Leaver: Terminated -> disables the LDAP ApacheDS account.
+  Rehire: Terminated -> Active -> enables it again.
+  Then sends an email to notifyEmail. (Group access is handled by the
+  birthright roles during the identity refresh.)
 -->
 <Workflow explicitTransitions="true" name="HR Lifecycle - Status Change Notification" type="IdentityLifecycle">
 
@@ -28,6 +30,7 @@
   <Variable name="endDate"/>
   <Variable name="jobDescription"/>
   <Variable name="managerName"/>
+  <Variable name="ldapResult"/>
 
   <Description>Emails a notification when an identity moves between lifecycle states.</Description>
 
@@ -62,6 +65,38 @@
         }
       ]]></Source>
     </Script>
+    <!-- Leaver: disable the LDAP account -->
+    <Transition to="Disable LDAP">
+      <Script>
+        <Source><![CDATA[
+          return "Terminated".equals(newStatus) && !"Terminated".equals(oldStatus);
+        ]]></Source>
+      </Script>
+    </Transition>
+    <!-- Rehire: enable the LDAP account again -->
+    <Transition to="Enable LDAP">
+      <Script>
+        <Source><![CDATA[
+          return "Terminated".equals(oldStatus) && "Active".equals(newStatus);
+        ]]></Source>
+      </Script>
+    </Transition>
+    <Transition to="Check Notify"/>
+  </Step>
+
+  <Step action="rule:LDAP ApacheDS - Set Account Status" icon="Provision" name="Disable LDAP" resultVariable="ldapResult">
+    <Arg name="identityName" value="ref:identityName"/>
+    <Arg name="action" value="Disable"/>
+    <Transition to="Check Notify"/>
+  </Step>
+
+  <Step action="rule:LDAP ApacheDS - Set Account Status" icon="Provision" name="Enable LDAP" resultVariable="ldapResult">
+    <Arg name="identityName" value="ref:identityName"/>
+    <Arg name="action" value="Enable"/>
+    <Transition to="Check Notify"/>
+  </Step>
+
+  <Step icon="Task" name="Check Notify">
     <!-- Only notify on a real move between two lifecycle states -->
     <Transition to="Send Email">
       <Script>
@@ -84,6 +119,7 @@
     <Arg name="endDate" value="ref:endDate"/>
     <Arg name="jobDescription" value="ref:jobDescription"/>
     <Arg name="managerName" value="ref:managerName"/>
+    <Arg name="ldapResult" value="ref:ldapResult"/>
     <Transition to="Stop"/>
   </Step>
 

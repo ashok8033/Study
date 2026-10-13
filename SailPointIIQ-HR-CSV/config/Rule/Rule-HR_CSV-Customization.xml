@@ -92,6 +92,8 @@
 
   object.setAttribute("status", status);
   object.setAttribute("inactive", !"Active".equals(status));
+  // Shows the HR account as disabled (red) on Application Accounts once Terminated
+  object.setAttribute("IIQDisabled", Boolean.valueOf("Terminated".equals(status)));
 
   if (log.isDebugEnabled()) {
       log.debug("HR CSV - account " + accountId + " status=" + status);

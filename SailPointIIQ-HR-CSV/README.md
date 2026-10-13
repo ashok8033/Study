@@ -231,3 +231,24 @@ Account IDs: HR CSV = employeeNumber (`1000`); LDAP = DN (`uid=ashok.kumar,ou=pe
 For LDAP you can also use the refresh icon on the account in Identity > Application Accounts.
 Afterwards run **HR Lifecycle - Daily Identity Refresh** if roles or LDAP sync should follow.
 
+## Leaver / rehire: LDAP account disable and enable
+
+| Status change | LDAP ApacheDS account | HR account in IIQ |
+|---|---|---|
+| ... -> **Terminated** | **disabled**: `pwdAccountLockedTime: 000001010000Z` | shown disabled (`IIQDisabled`) |
+| Terminated -> **Active** (rehire) | **enabled**: `pwdAccountLockedTime` removed | shown active |
+
+The lifecycle workflow *HR Lifecycle - Status Change Notification* calls the rule
+`LDAP ApacheDS - Set Account Status`, which changes ApacheDS directly and updates the IIQ account straight away.
+The birthright roles are removed by the daily refresh, which also takes the person out of the LDAP groups.
+The LDAP result is included in the status-change email.
+
+For people who were already Terminated before this was added, run once:
+
+```
+rule "LDAP ApacheDS - Disable Terminated Users"
+```
+
+The lock only stops logins if the ApacheDS password policy is enabled (Apache Directory Studio >
+server configuration > Password Policy).
+

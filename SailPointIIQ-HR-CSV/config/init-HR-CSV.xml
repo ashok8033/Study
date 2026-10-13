@@ -16,6 +16,9 @@
   <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-BeforeProvisioning.xml"/>
   <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-AfterProvisioning.xml"/>
   <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-Customization.xml"/>
+  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-SetAccountStatus.xml"/>
+  <!-- Catch-up for existing leavers: rule "LDAP ApacheDS - Disable Terminated Users" -->
+  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-DisableTerminatedUsers.xml"/>
   <ImportAction name="include" value="Application/Application-HR_Authoritative_CSV.xml"/>
   <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_CSV-Aggregation.xml"/>
   <ImportAction name="include" value="Application/Application-LDAP_ApacheDS.xml"/>

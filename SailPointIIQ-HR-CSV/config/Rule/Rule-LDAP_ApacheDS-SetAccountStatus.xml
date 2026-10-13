@@ -1,0 +1,77 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="LDAP ApacheDS - Set Account Status">
+  <Description>
+    Disables or enables an identity's LDAP ApacheDS account.
+
+      Disable: sets pwdAccountLockedTime = 000001010000Z (ApacheDS admin lock)
+      Enable : removes pwdAccountLockedTime
+
+    Then updates the IIQ account (link) right away - accountStatus, IIQDisabled -
+    so the Application Accounts tab shows the new state without waiting for the
+    next LDAP aggregation.
+
+    Inputs: identityName (e.g. "1015"), action ("Disable" or "Enable").
+    Called by the "HR Lifecycle - Status Change Notification" workflow
+    (Terminated -> Disable, Terminated -> Active -> Enable) and by
+    "LDAP ApacheDS - Disable Terminated Users".
+  </Description>
+  <Signature returnType="String">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="identityName" type="String"/>
+      <Argument name="action" type="String"/>
+    </Inputs>
+    <Returns>
+      <Argument name="result" type="String"/>
+    </Returns>
+  </Signature>
+  <ReferencedRules>
+    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - Library"/>
+  </ReferencedRules>
+  <Source><![CDATA[
+  import javax.naming.directory.DirContext;
+  import sailpoint.object.Application;
+  import sailpoint.object.Identity;
+  import sailpoint.object.Link;
+
+  String APP_NAME = "LDAP ApacheDS";
+
+  if (identityName == null || action == null) {
+      return "ERROR: identityName and action are required";
+  }
+  boolean disable = "Disable".equalsIgnoreCase(action);
+  if (!disable && !"Enable".equalsIgnoreCase(action)) {
+      return "ERROR: action must be Disable or Enable, not " + action;
+  }
+
+  Identity identity = context.getObjectByName(Identity.class, identityName);
+  if (identity == null) return "ERROR: identity " + identityName + " not found";
+  Application app = context.getObjectByName(Application.class, APP_NAME);
+  if (app == null) return "ERROR: application " + APP_NAME + " not found";
+
+  Link link = identity.getLink(app);
+  if (link == null) {
+      return "SKIPPED " + identityName + ": no LDAP ApacheDS account";
+  }
+  String dn = link.getNativeIdentity();
+
+  DirContext ldap = ldapConnect(context, app);
+  try {
+      ldapSetDisabled(ldap, dn, disable);
+  } finally {
+      ldap.close();
+  }
+
+  // Reflect it in IIQ straight away
+  link.setAttribute("accountStatus", disable ? "Disabled" : "Active");
+  link.setAttribute("IIQDisabled", Boolean.valueOf(disable));
+  context.saveObject(link);
+  context.commitTransaction();
+
+  String msg = (disable ? "DISABLED " : "ENABLED ") + identityName + ": " + dn;
+  log.info("LDAP ApacheDS: " + msg);
+  return msg;
+  ]]></Source>
+</Rule>

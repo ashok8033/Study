@@ -64,6 +64,25 @@
       }
   }
 
+  // Disables (true) or enables (false) an account with the ApacheDS admin lock:
+  // pwdAccountLockedTime = 000001010000Z means "locked until an admin unlocks it".
+  void ldapSetDisabled(DirContext ldap, String userDn, boolean disable) {
+      ModificationItem[] mods = new ModificationItem[1];
+      if (disable) {
+          mods[0] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE,
+                  new BasicAttribute("pwdAccountLockedTime", "000001010000Z"));
+          ldap.modifyAttributes(userDn, mods);
+      } else {
+          mods[0] = new ModificationItem(DirContext.REMOVE_ATTRIBUTE,
+                  new BasicAttribute("pwdAccountLockedTime"));
+          try {
+              ldap.modifyAttributes(userDn, mods);
+          } catch (NoSuchAttributeException e) {
+              // not locked - already enabled
+          }
+      }
+  }
+
   // Returns the DNs of the groups under ou=groups,dc=example,dc=com that contain userDn
   List ldapGroupsOf(DirContext ldap, String userDn) {
       List groups = new ArrayList();
