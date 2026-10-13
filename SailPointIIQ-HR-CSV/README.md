@@ -173,3 +173,23 @@ Setup:
    (Identities > open the identity > Roles / Entitlements, or Setup > Roles).
 4. After approval the user is added to `cn=Office365Access`. Run **LDAP ApacheDS - Account Aggregation** to read it back.
 
+## LDAP account status
+
+During **LDAP ApacheDS - Account Aggregation** the Customization rule reads ApacheDS's password-policy and
+operational attributes for each account and adds:
+
+| IIQ account attribute | From ApacheDS | Value |
+|---|---|---|
+| `accountStatus` | `pwdAccountLockedTime` | `Active` (not set), `Disabled` (`000001010000Z`, admin lock), `Locked` (any other time: failed logins) |
+| `IIQDisabled` / `IIQLocked` | same | IIQ's own disabled/locked flags, so the account shows as disabled or locked in the UI |
+| `lockedTime` | `pwdAccountLockedTime` | when it was locked by failed logins |
+| `lastFailedLogin` | `pwdFailureTime` | last failed login |
+| `passwordLastChanged` | `pwdChangedTime` | last password change |
+| `createdOn` / `modifiedOn` | `createTimestamp` / `modifyTimestamp` | entry created / last changed |
+
+Times are shown as `DD-MM-YYYY HH:mm:ss UTC`.
+
+To test, disable an account in Apache Directory Studio by adding
+`pwdAccountLockedTime: 000001010000Z` to it, run the LDAP aggregation, and the account shows as Disabled in IIQ.
+Remove the attribute and aggregate again to make it Active.
+

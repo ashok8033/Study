@@ -242,6 +242,26 @@
       <AttributeDefinition name="employeeType" type="string"/>
       <AttributeDefinition name="title" type="string"/>
       <AttributeDefinition multi="true" name="objectClass" type="string"/>
+      <!-- Account status details, filled in by the "LDAP ApacheDS - Customization" rule
+           from ApacheDS operational attributes (pwdAccountLockedTime etc.) -->
+      <AttributeDefinition name="accountStatus" type="string">
+        <Description>Active, Disabled (admin lock) or Locked (failed logins)</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="lockedTime" type="string">
+        <Description>When the account was locked after failed logins (DD-MM-YYYY HH:mm:ss UTC)</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="lastFailedLogin" type="string">
+        <Description>Last failed login (DD-MM-YYYY HH:mm:ss UTC)</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="passwordLastChanged" type="string">
+        <Description>Last password change (DD-MM-YYYY HH:mm:ss UTC)</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="createdOn" type="string">
+        <Description>When the LDAP entry was created (DD-MM-YYYY HH:mm:ss UTC)</Description>
+      </AttributeDefinition>
+      <AttributeDefinition name="modifiedOn" type="string">
+        <Description>When the LDAP entry was last changed (DD-MM-YYYY HH:mm:ss UTC)</Description>
+      </AttributeDefinition>
       <!-- Entitlement granted by the IT roles: DNs of the groupOfUniqueNames groups -->
       <AttributeDefinition entitlement="true" managed="true" multi="true" name="groups" schemaObjectType="group" type="string">
         <Description>Group memberships (DN of each group)</Description>

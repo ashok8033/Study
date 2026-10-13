@@ -2,15 +2,20 @@
 <!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
 <Rule language="beanshell" name="LDAP ApacheDS - Library">
   <Description>
-    Shared functions for LDAP ApacheDS group membership, used by the Before /
-    After Provisioning rules and the Customization rule. Talks to ApacheDS
+    Shared functions for LDAP ApacheDS group membership and account status,
+    used by the Before / After Provisioning rules and the Customization rule. Talks to ApacheDS
     directly with JNDI, using the host, port, user and password configured on
     the LDAP ApacheDS application.
   </Description>
   <Source><![CDATA[
+  import java.text.SimpleDateFormat;
   import java.util.ArrayList;
+  import java.util.Date;
+  import java.util.HashMap;
   import java.util.Hashtable;
   import java.util.List;
+  import java.util.Map;
+  import java.util.TimeZone;
   import javax.naming.Context;
   import javax.naming.NamingEnumeration;
   import javax.naming.directory.AttributeInUseException;
@@ -74,6 +79,37 @@
           groups.add(r.getNameInNamespace());
       }
       return groups;
+  }
+
+  // Reads the named attributes (operational ones included, e.g. pwdAccountLockedTime,
+  // createTimestamp) of one entry. Returns attribute name -> first value as String.
+  // Missing attributes are simply not in the map.
+  Map ldapReadAttributes(DirContext ldap, String dn, String[] attrIds) {
+      Map values = new HashMap();
+      javax.naming.directory.Attributes attrs = ldap.getAttributes(dn, attrIds);
+      NamingEnumeration all = attrs.getAll();
+      while (all.hasMore()) {
+          javax.naming.directory.Attribute a = (javax.naming.directory.Attribute) all.next();
+          Object v = a.get();
+          if (v != null) values.put(a.getID(), v.toString());
+      }
+      return values;
+  }
+
+  // LDAP generalized time (20261013101500Z or 20261013101500.123Z, UTC) -> "13-10-2026 10:15:00 UTC".
+  // Returns the input unchanged if it cannot be parsed.
+  String ldapFormatTime(String value) {
+      if (value == null || value.length() < 14) return value;
+      try {
+          SimpleDateFormat in = new SimpleDateFormat("yyyyMMddHHmmss");
+          in.setTimeZone(TimeZone.getTimeZone("UTC"));
+          Date d = in.parse(value.substring(0, 14));
+          SimpleDateFormat out = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+          out.setTimeZone(TimeZone.getTimeZone("UTC"));
+          return out.format(d) + " UTC";
+      } catch (Exception e) {
+          return value;
+      }
   }
   ]]></Source>
 </Rule>
