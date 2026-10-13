@@ -9,7 +9,9 @@
     Also creates the "status" identity attribute (PreHire / Active /
     Terminated), calculated by the global rule "HR Lifecycle - Status Attribute",
     and sets "displayName" to be calculated by the global rule
-    "HR CSV - Display Name" ("firstName lastName" from HR).
+    "HR CSV - Display Name" ("firstName lastName" from HR), with a sync target
+    to the LDAP ApacheDS account attribute "displayName" (pushed by an identity
+    refresh with "Synchronize attributes" on).
 
     Run it from the IIQ console:   rule "HR CSV - Setup Identity Mappings"
     or from Debug > Rule > Run.    Import the Application and rules first.
@@ -19,6 +21,7 @@
   import java.util.List;
   import sailpoint.object.Application;
   import sailpoint.object.AttributeSource;
+  import sailpoint.object.AttributeTarget;
   import sailpoint.object.ObjectAttribute;
   import sailpoint.object.ObjectConfig;
   import sailpoint.object.Rule;
@@ -135,6 +138,33 @@
   }
   dnAttr.setRule(displayNameRule);
   report.append("displayName <- global rule HR CSV - Display Name\n");
+
+  // Target: push the identity displayName to the LDAP ApacheDS account's displayName
+  Application ldapApp = context.getObjectByName(Application.class, "LDAP ApacheDS");
+  if (ldapApp == null) {
+      report.append("SKIPPED displayName -> LDAP ApacheDS (application not found, import it and run again)\n");
+  } else {
+      List targets = dnAttr.getTargets();
+      if (targets == null) targets = new ArrayList();
+      boolean hasTarget = false;
+      for (Object o : targets) {
+          AttributeTarget t = (AttributeTarget) o;
+          if (t.getApplication() != null && "LDAP ApacheDS".equals(t.getApplication().getName())
+                  && "displayName".equals(t.getName())) {
+              hasTarget = true;
+          }
+      }
+      if (hasTarget) {
+          report.append("Skipped displayName -> LDAP ApacheDS:displayName (target already exists)\n");
+      } else {
+          AttributeTarget t = new AttributeTarget();
+          t.setApplication(ldapApp);
+          t.setName("displayName");
+          targets.add(t);
+          dnAttr.setTargets(targets);
+          report.append("displayName -> LDAP ApacheDS:displayName (sync target)\n");
+      }
+  }
 
   oc.setObjectAttributes(attrs);
   context.saveObject(oc);

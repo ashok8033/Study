@@ -4,7 +4,8 @@
   Recalculates identity attributes (including "status"), processes lifecycle
   events, and evaluates the birthright role assignment rules: matching roles are
   assigned and provisioned (LDAP account + groups), roles that no longer match
-  are removed. Run it after every HR aggregation, and schedule it daily (shortly
+  are removed. Also synchronizes attributes with targets (displayName is
+  pushed to the LDAP ApacheDS account). Run it after every HR aggregation, and schedule it daily (shortly
   after midnight) so date-based moves happen on the right day.
 -->
 <TaskDefinition name="HR Lifecycle - Daily Identity Refresh"
@@ -20,6 +21,8 @@
       <entry key="refreshScorecard" value="false"/>
       <entry key="checkPolicies" value="false"/>
       <entry key="provision" value="true"/>
+      <!-- Push identity attributes that have targets (displayName -> LDAP displayName) -->
+      <entry key="synchronizeAttributes" value="true"/>
     </Map>
   </Attributes>
   <Description>Refreshes identity attributes (including lifecycle status), processes lifecycle events and provisions birthright roles.</Description>

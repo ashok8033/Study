@@ -2,7 +2,7 @@
 <!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
 <Rule language="beanshell" name="HR CSV - Show Attributes On Identity Page">
   <Description>
-    One-time setup rule. Adds the HR identity attributes (Status, Start Date,
+    One-time setup rule. Adds the HR identity attributes (Display Name, Status, Start Date,
     End Date, ...) to the "identityViewAttributes" list in UIConfig, which
     controls what the View Identity > Attributes tab shows.
     Existing entries are kept; attributes already in the list are skipped.
@@ -18,7 +18,7 @@
   import sailpoint.tools.Util;
 
   String KEY = "identityViewAttributes";
-  String[] ADD = { "status", "startDate", "endDate", "employeeNumber",
+  String[] ADD = { "displayName", "status", "startDate", "endDate", "employeeNumber",
                    "jobDescription", "employeeType", "country", "isManager" };
 
   UIConfig ui = context.getObjectByName(UIConfig.class, "UIConfig");

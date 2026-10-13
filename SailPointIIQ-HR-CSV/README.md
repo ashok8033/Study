@@ -194,3 +194,24 @@ To test, disable an account in Apache Directory Studio by adding
 `pwdAccountLockedTime: 000001010000Z` to it, run the LDAP aggregation, and the account shows as Disabled in IIQ.
 Remove the attribute and aggregate again to make it Active.
 
+## Display Name
+
+The identity attribute **Display Name** (`displayName`) is calculated by the global rule
+`HR CSV - Display Name` on every refresh:
+
+```
+displayName = firstName + " " + lastName      (from the HR Authoritative CSV account)
+```
+
+It is pushed to the **LDAP ApacheDS** account attribute `displayName` through an attribute sync target.
+The daily refresh has *Synchronize attributes* on, so when the HR name changes the LDAP
+`displayName` is updated on the next refresh. New LDAP accounts already get it from the Create Account policy.
+
+Setup:
+
+1. Import `Rule-HR_CSV-DisplayName.xml`, `Rule-HR_CSV-SetupIdentityMappings.xml`, `Rule-HR_CSV-ShowOnIdentityPage.xml`
+   and `TaskDefinition-HR_Lifecycle-DailyRefresh.xml`.
+2. Run `rule "HR CSV - Setup Identity Mappings"` (prints `displayName -> LDAP ApacheDS:displayName (sync target)`).
+3. Run `rule "HR CSV - Show Attributes On Identity Page"`, then log out and back in.
+4. Run the HR aggregation and **HR Lifecycle - Daily Identity Refresh**.
+
