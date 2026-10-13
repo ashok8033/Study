@@ -253,3 +253,10 @@ rule "LDAP ApacheDS - Disable Terminated Users"
 The lock only stops logins if the ApacheDS password policy is enabled (Apache Directory Studio >
 server configuration > Password Policy).
 
+## Design documents
+
+- `docs/SailPointIIQ_HR_LDAP_HLD.pdf` - High-Level Design (scope, architecture, identity and access model, lifecycle, decisions, risks)
+- `docs/SailPointIIQ_HR_LDAP_LLD.pdf` - Low-Level Design (applications, schemas, rules, roles, workflow, tasks, runbook, test cases, troubleshooting)
+
+Rebuild them after changes with `python3 docs/make_docs.py docs` (needs `reportlab`).
+
