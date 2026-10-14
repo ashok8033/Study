@@ -262,3 +262,11 @@ server configuration > Password Policy).
 Rebuild them after changes (needs `reportlab`), from the `docs` folder:
 `python3 make_docs.py .` (HLD + LLD) and `python3 make_dev_guide.py .` (Developer Guide).
 
+## Email from LDAP
+
+The identity attribute **Email** (`email`) is sourced from the LDAP ApacheDS account attribute `mail`,
+which the LDAP Create Account policy generates as `<uid>@example.com`. The setup rule
+`HR CSV - Setup Identity Mappings` adds the mapping. The value reaches the identity on the next
+**HR Lifecycle - Daily Identity Refresh** (or LDAP aggregation) after the LDAP account exists.
+People without an LDAP account (PreHire) have no email yet.
+
