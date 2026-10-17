@@ -1,13 +1,9 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <!DOCTYPE sailpoint PUBLIC "sailpoint.dtd" "sailpoint.dtd">
 <sailpoint>
-  <SPRight name="ViewTaskStatusDashboard"
-           displayName="View Task Status Dashboard"
-           description="Allows viewing the last run status of all scheduled tasks."/>
+  <SPRight name="ViewTaskStatusDashboard" displayName="View Task Status Dashboard"/>
 
-  <Capability name="TaskStatusDashboardViewer"
-              displayName="Task Status Dashboard Viewer"
-              description="Grants access to the Task Status Dashboard plugin.">
+  <Capability name="TaskStatusDashboardViewer" displayName="Task Status Dashboard Viewer">
     <RightRefs>
       <Reference class="sailpoint.object.SPRight" name="ViewTaskStatusDashboard"/>
     </RightRefs>
