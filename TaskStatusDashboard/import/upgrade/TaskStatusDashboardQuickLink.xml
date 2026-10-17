@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sailpoint PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<sailpoint>
+  <!-- Who sees the quick link: system admins and holders of the plugin's viewer capability -->
+  <DynamicScope name="Task Status Dashboard Viewers">
+    <Selector>
+      <IdentitySelector>
+        <CompoundFilter>
+          <CompositeFilter operation="OR">
+            <Filter operation="EQ" property="capabilities.name" value="SystemAdministrator"/>
+            <Filter operation="EQ" property="capabilities.name" value="TaskStatusDashboardViewer"/>
+          </CompositeFilter>
+        </CompoundFilter>
+      </IdentitySelector>
+    </Selector>
+  </DynamicScope>
+
+  <QuickLink action="external" category="Custom" messageKey="Scheduled Task Status"
+             name="Task Status Dashboard" ordering="10">
+    <Attributes>
+      <Map>
+        <entry key="url" value="plugins/pluginPage.jsf?pn=TaskStatusDashboard"/>
+      </Map>
+    </Attributes>
+    <QuickLinkOptions allowSelf="true">
+      <DynamicScopeRef>
+        <Reference class="sailpoint.object.DynamicScope" name="Task Status Dashboard Viewers"/>
+      </DynamicScopeRef>
+    </QuickLinkOptions>
+  </QuickLink>
+</sailpoint>

@@ -40,8 +40,14 @@ ant -Diiq.home=/opt/tomcat/webapps/identityiq
 1. IdentityIQ → **Gear → Plugins → New** → upload `dist/TaskStatusDashboard-1.0.0.zip`.
 2. Give users access: assign the **Task Status Dashboard Viewer** capability
    (System Administrators already have access).
-3. Open: `https://<host>/identityiq/plugins/pluginPage.jsf?pn=TaskStatusDashboard`
-   (also reachable from the plugin's entry in the Plugins menu).
+3. Open it from the **Scheduled Task Status** quick link (Quick Links menu, *Custom*
+   category), or directly: `https://<host>/identityiq/plugins/pluginPage.jsf?pn=TaskStatusDashboard`.
+   The quick link is shown to System Administrators and holders of the viewer capability.
+
+### Upgrading
+
+Raise `version` in `manifest.xml` and `plugin.version` in `build.xml`, rebuild, and upload the
+new zip. Files in `import/upgrade/` are imported on upgrade; `import/install/` only on a fresh install.
 
 ## How the status is determined
 
