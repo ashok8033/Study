@@ -5,10 +5,19 @@
         minSystemVersion="8.0"
         name="TaskStatusDashboard"
         rightRequired="ViewTaskStatusDashboard"
-        version="1.0.1">
+        version="1.0.2">
   <Attributes>
     <Map>
       <entry key="minUpgradableVersion" value="1.0.0"/>
+      <entry key="settings">
+        <value>
+          <List>
+            <Setting dataType="string" name="reportRecipients" label="Report recipients"
+                     helpText="Comma separated email addresses the Email Report button sends to."
+                     defaultValue="ashokhearts@gmail.com"/>
+          </List>
+        </value>
+      </entry>
       <entry key="fullPage">
         <value>
           <FullPage title="Scheduled Task Status"/>

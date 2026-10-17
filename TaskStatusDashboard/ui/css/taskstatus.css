@@ -14,7 +14,9 @@
 .tsd-card.tsd-active { border-color: #333; }
 
 .tsd-updated { font-size: 12px; color: #777; margin-bottom: 10px; }
-.tsd-error { padding: 10px; margin-bottom: 10px; background: #fdecea; color: #b71c1c; border-radius: 4px; }
+.tsd-btn:disabled { opacity: 0.6; cursor: default; }
+.tsd-notice { padding: 10px; margin-top: 12px; background: #e8f5e9; color: #1b5e20; border-radius: 4px; }
+.tsd-error {padding: 10px; margin-bottom: 10px; background: #fdecea; color: #b71c1c; border-radius: 4px; }
 
 .tsd-table { width: 100%; border-collapse: collapse; background: #fff; }
 .tsd-table th, .tsd-table td { padding: 8px 10px; border-bottom: 1px solid #e5e5e5; text-align: left; font-size: 13px; vertical-align: middle; }
