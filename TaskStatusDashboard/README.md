@@ -11,7 +11,19 @@ Shows the **last run status of every scheduled task** in SailPoint IdentityIQ on
 | ⚪ Grey | Never Run | Schedule has no task result yet |
 
 Features: summary counters (click to filter), search, failures listed first, first error
-message shown per task, next scheduled run, auto-refresh every 60 seconds.
+message shown per task, next scheduled run, auto-refresh every 60 seconds, and an
+**Email Report** button.
+
+## Email Report
+
+The **Email Report** button sends the current status table as an HTML email.
+
+- Recipients come from the plugin setting **Report recipients**
+  (Gear → Plugins → Task Status Dashboard → Configure). Default: `ashokhearts@gmail.com`.
+  Separate multiple addresses with commas.
+- Mail goes out through IdentityIQ's own mail server, so
+  **Gear → Global Settings → IdentityIQ Configuration → Mail Settings** must be set up
+  (SMTP host, port, from address).
 
 ## Layout
 

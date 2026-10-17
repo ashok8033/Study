@@ -8,14 +8,18 @@ import java.util.List;
 import java.util.Map;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import sailpoint.api.SailPointContext;
+import sailpoint.object.EmailOptions;
+import sailpoint.object.EmailTemplate;
 import sailpoint.object.Filter;
 import sailpoint.object.QueryOptions;
 import sailpoint.object.TaskDefinition;
@@ -29,9 +33,11 @@ import sailpoint.tools.Message;
 import sailpoint.tools.Util;
 
 /**
- * REST endpoint returning the latest execution status of every TaskSchedule.
+ * REST endpoints returning the latest execution status of every TaskSchedule
+ * and emailing it as a report.
  *
- * GET /identityiq/plugin/rest/taskstatus/schedules
+ * GET  /identityiq/plugin/rest/taskstatus/schedules
+ * POST /identityiq/plugin/rest/taskstatus/email
  */
 @Path("taskstatus")
 @Produces(MediaType.APPLICATION_JSON)
@@ -45,6 +51,9 @@ public class TaskStatusResource extends BasePluginResource {
     public static final String STATUS_WARNING = "Warning";
     public static final String STATUS_RUNNING = "Running";
     public static final String STATUS_NEVER_RUN = "NeverRun";
+
+    // Plugin setting (manifest.xml) holding comma separated report recipients
+    public static final String SETTING_RECIPIENTS = "reportRecipients";
 
     @Override
     public String getPluginName() {
@@ -72,6 +81,56 @@ public class TaskStatusResource extends BasePluginResource {
             }
         }
         return rows;
+    }
+
+    /**
+     * Emails the current status report to the recipients in the plugin's
+     * "reportRecipients" setting.
+     *
+     * POST /identityiq/plugin/rest/taskstatus/email
+     */
+    @POST
+    @Path("email")
+    @RequiredRight("ViewTaskStatusDashboard")
+    public Response emailReport() {
+        Map<String, Object> body = new HashMap<>();
+        String recipients = getSettingString(SETTING_RECIPIENTS);
+        if (Util.isNullOrEmpty(recipients)) {
+            body.put("message", "No recipients configured in the plugin setting 'Report recipients'.");
+            return Response.status(Response.Status.BAD_REQUEST).entity(body).build();
+        }
+
+        try {
+            List<Map<String, Object>> rows = getSchedules();
+
+            EmailTemplate template = new EmailTemplate();
+            template.setSubject("IdentityIQ Scheduled Task Status - " + countFailed(rows) + " failed");
+            // The report goes in as a variable so Velocity does not parse task names or messages
+            template.setBody("<html><body>$reportHtml</body></html>");
+
+            EmailOptions options = new EmailOptions(recipients, null);
+            options.setVariable("reportHtml", TaskStatusReport.toHtml(rows));
+            options.setSendImmediate(true);
+
+            getContext().sendEmailNotification(template, options);
+        } catch (Exception e) {
+            log.error("Unable to send task status report to " + recipients, e);
+            body.put("message", "Failed to send email: " + e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(body).build();
+        }
+
+        body.put("recipients", recipients);
+        return Response.ok(body).build();
+    }
+
+    private int countFailed(List<Map<String, Object>> rows) {
+        int failed = 0;
+        for (Map<String, Object> row : rows) {
+            if (STATUS_FAILED.equals(row.get("status"))) {
+                failed++;
+            }
+        }
+        return failed;
     }
 
     private Map<String, Object> buildRow(SailPointContext context, TaskSchedule schedule)

@@ -44,13 +44,45 @@
         return (window.SailPoint ? SailPoint.CONTEXT_PATH : '/identityiq') + '/plugin/rest/' + path;
     }
 
-    function load() {
+    function request(method, path) {
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', restUrl('taskstatus/schedules'), true);
+        xhr.open(method, restUrl(path), true);
         xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('Content-Type', 'application/json');
         if (window.PluginHelper && PluginHelper.getCsrfToken) {
             xhr.setRequestHeader('X-XSRF-TOKEN', PluginHelper.getCsrfToken());
         }
+        return xhr;
+    }
+
+    function sendEmail() {
+        var btn = $('tsd-email');
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+        $('tsd-notice').style.display = 'none';
+
+        var xhr = request('POST', 'taskstatus/email');
+        xhr.onload = function () {
+            var res = {};
+            try { res = JSON.parse(xhr.responseText); } catch (e) { /* non-JSON error page */ }
+            if (xhr.status >= 200 && xhr.status < 300) {
+                $('tsd-error').style.display = 'none';
+                $('tsd-notice').textContent = 'Report sent to ' + res.recipients + '.';
+                $('tsd-notice').style.display = 'block';
+            } else {
+                showError(res.message || 'Failed to send report (HTTP ' + xhr.status + ').');
+            }
+        };
+        xhr.onerror = function () { showError('Network error while sending report.'); };
+        xhr.onloadend = function () {
+            btn.disabled = false;
+            btn.textContent = 'Email Report';
+        };
+        xhr.send('{}');
+    }
+
+    function load() {
+        var xhr = request('GET', 'taskstatus/schedules');
         xhr.onload = function () {
             if (xhr.status >= 200 && xhr.status < 300) {
                 $('tsd-error').style.display = 'none';
@@ -129,6 +161,7 @@
 
     function init() {
         $('tsd-refresh').addEventListener('click', load);
+        $('tsd-email').addEventListener('click', sendEmail);
         $('tsd-search').addEventListener('input', render);
         $('tsd-autorefresh').addEventListener('change', scheduleRefresh);
         $('tsd-summary').addEventListener('click', function (e) {
