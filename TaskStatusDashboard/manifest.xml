@@ -1,0 +1,26 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Plugin PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Plugin certificationLevel="None"
+        displayName="Task Status Dashboard"
+        minSystemVersion="8.0"
+        name="TaskStatusDashboard"
+        rightRequired="ViewTaskStatusDashboard"
+        version="1.0.0">
+  <Attributes>
+    <Map>
+      <entry key="minUpgradableVersion" value="1.0.0"/>
+      <entry key="fullPage">
+        <value>
+          <FullPage title="Scheduled Task Status"/>
+        </value>
+      </entry>
+      <entry key="restResources">
+        <value>
+          <List>
+            <String>com.plugin.taskstatus.rest.TaskStatusResource</String>
+          </List>
+        </value>
+      </entry>
+    </Map>
+  </Attributes>
+</Plugin>

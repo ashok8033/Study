@@ -1,0 +1,48 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:h="http://java.sun.com/jsf/html">
+<body>
+<ui:composition>
+  <link rel="stylesheet" type="text/css"
+        href="#{plugins.requestContextPath}/plugin/TaskStatusDashboard/ui/css/taskstatus.css"/>
+
+  <div id="tsd-app" class="tsd">
+    <div class="tsd-header">
+      <h1>Scheduled Task Status</h1>
+      <div class="tsd-actions">
+        <input type="text" id="tsd-search" placeholder="Search task or schedule..."/>
+        <label class="tsd-auto"><input type="checkbox" id="tsd-autorefresh" checked="checked"/> Auto-refresh (60s)</label>
+        <button type="button" id="tsd-refresh" class="tsd-btn">Refresh</button>
+      </div>
+    </div>
+
+    <div id="tsd-summary" class="tsd-summary"></div>
+    <div id="tsd-updated" class="tsd-updated"></div>
+    <div id="tsd-error" class="tsd-error" style="display:none"></div>
+
+    <table class="tsd-table">
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>Schedule</th>
+          <th>Task Definition</th>
+          <th>Last Run Started</th>
+          <th>Last Run Completed</th>
+          <th>Duration</th>
+          <th>Next Run</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody id="tsd-rows">
+        <tr><td colspan="8" class="tsd-empty">Loading...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <script type="text/javascript"
+          src="#{plugins.requestContextPath}/plugin/TaskStatusDashboard/ui/js/taskstatus.js"></script>
+</ui:composition>
+</body>
+</html>
