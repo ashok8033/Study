@@ -5,7 +5,7 @@
         minSystemVersion="8.0"
         name="TaskStatusDashboard"
         rightRequired="ViewTaskStatusDashboard"
-        version="1.0.0">
+        version="1.0.1">
   <Attributes>
     <Map>
       <entry key="minUpgradableVersion" value="1.0.0"/>
