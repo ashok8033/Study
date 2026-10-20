@@ -25,11 +25,11 @@
         <value>
           <List>
             <Setting dataType="string" name="identityStatusAttribute" label="Identity status attribute"
-                     helpText="Identity attribute holding the lifecycle status (e.g. employeeStatus). Leave blank to use the IdentityIQ Inactive flag (Active / Inactive)."
-                     defaultValue=""/>
+                     helpText="Identity attribute holding the lifecycle status. Default: status (PreHire / Active / Terminated, set by the rule HR Lifecycle - Status Attribute). Leave blank to use the IdentityIQ Inactive flag (Active / Inactive)."
+                     defaultValue="status"/>
             <Setting dataType="string" name="inactiveStatusValues" label="Inactive status values"
                      helpText="Comma separated status values whose accounts should be disabled. Case-insensitive."
-                     defaultValue="Inactive,Terminated,Disabled,Leaver"/>
+                     defaultValue="Terminated,PreHire"/>
             <Setting dataType="string" name="excludedApplications" label="Excluded applications"
                      helpText="Comma separated application names to leave out of the dashboard."
                      defaultValue=""/>

@@ -3,8 +3,12 @@
 A live KPI dashboard that checks every identity's **lifecycle status** against the **status of its
 application accounts**, so you can see at a glance whether identities and their accounts agree.
 
-- An **inactive** identity (e.g. Terminated) should have only **disabled** accounts.
+- An **inactive** identity (Terminated, PreHire) should have only **disabled** accounts.
 - An **active** identity should have **enabled** accounts.
+
+The defaults match this repository's HR/LDAP setup (`SailPointIIQ-HR-CSV`, see
+[Lifecycle in this environment](#lifecycle-in-this-environment)); other setups only need the
+plugin settings changed.
 
 Anything else is a **mismatch**:
 
@@ -21,6 +25,7 @@ Anything else is a **mismatch**:
 - [Build](#build)
 - [Install](#install)
 - [Configuration](#configuration)
+- [Lifecycle in this environment](#lifecycle-in-this-environment)
 - [How statuses are compared](#how-statuses-are-compared)
 - [Access control](#access-control)
 - [REST API](#rest-api)
@@ -90,8 +95,8 @@ ant -Diiq.home="C:\Program Files\Apache Software Foundation\Tomcat 9.0\webapps\i
 ## Install
 
 1. **Gear → Plugins → New**, upload `dist/IdentityLifecycleDashboard-<version>.zip`, **Install**.
-2. **Gear → Plugins → Identity Lifecycle Dashboard → Configure** and set the
-   [identity status attribute](#configuration) if you don't use the IdentityIQ Inactive flag.
+2. Optional: **Gear → Plugins → Identity Lifecycle Dashboard → Configure**. The defaults already
+   match the `SailPointIIQ-HR-CSV` setup (`status` attribute, Terminated/PreHire inactive).
 3. Open:
    ```
    http://<host>:<port>/identityiq/plugins/pluginPage.jsf?pn=IdentityLifecycleDashboard
@@ -106,16 +111,47 @@ Installing creates the SPRight `ViewIdentityLifecycleDashboard` and the capabili
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| Identity status attribute | *(blank)* | Identity attribute holding the lifecycle status, e.g. `employeeStatus` or `lifecycleState`. Blank = use the IdentityIQ **Inactive** flag (statuses *Active* / *Inactive*). |
-| Inactive status values | `Inactive,Terminated,Disabled,Leaver` | Status values whose accounts should be **disabled**. Comma separated, case-insensitive. Every other value means accounts should be **enabled**. |
+| Identity status attribute | `status` | Identity attribute holding the lifecycle status (here: PreHire / Active / Terminated). Blank = use the IdentityIQ **Inactive** flag (statuses *Active* / *Inactive*). |
+| Inactive status values | `Terminated,PreHire` | Status values whose accounts should be **disabled**. Comma separated, case-insensitive. Every other value means accounts should be **enabled**. |
 | Excluded applications | *(blank)* | Comma separated application names to leave out (e.g. applications without a disable concept). Case-insensitive. |
 | Include authoritative applications | `false` | Authoritative (HR) sources are skipped by default because their accounts are not disabled the way target accounts are. |
 | Cache seconds | `30` | How long a snapshot is reused. `0` = recalculate on every request. |
 | Max mismatch rows | `2000` | Maximum mismatches sent to the page. KPI counts are always complete; the page notes when the list is cut off. |
 
-Example: identities have `employeeStatus` = `Active`, `LOA`, `Terminated`, `Retired`.
-Set *Identity status attribute* = `employeeStatus` and *Inactive status values* =
-`Terminated,Retired`. `Active` and `LOA` identities are then expected to have enabled accounts.
+Example for a different environment: identities have `employeeStatus` = `Active`, `LOA`,
+`Terminated`, `Retired`. Set *Identity status attribute* = `employeeStatus` and *Inactive status
+values* = `Terminated,Retired`. `Active` and `LOA` identities are then expected to have enabled accounts.
+
+## Lifecycle in this environment
+
+From `SailPointIIQ-HR-CSV` (branch `claude/determined-gates-e23l4w`):
+
+- Identity attribute **`status`** is calculated on every refresh by the global rule
+  `HR Lifecycle - Status Attribute` from the HR account's `startDate` / `endDate` (`DD-MM-YYYY`):
+
+  | `status` | When | IIQ Inactive flag |
+  |----------|------|-------------------|
+  | PreHire | today is before `startDate` | true |
+  | Active | `startDate` up to and including `endDate` | false |
+  | Terminated | the day after `endDate` onwards | true |
+
+- **LDAP ApacheDS** accounts are created only for Active identities (birthright roles need
+  `status = Active`). On Terminated the workflow `HR Lifecycle - Status Change Notification` disables
+  the account (`pwdAccountLockedTime: 000001010000Z` → `IIQDisabled`); on rehire it re-enables it.
+  Accounts locked by failed logins get `IIQLocked` only, which the dashboard counts as *Locked*, not
+  as a mismatch.
+- **HR Authoritative CSV** is authoritative and skipped by default.
+
+What the dashboard expects, and what a mismatch means here:
+
+| Identity `status` | LDAP account should be | 🔴 / 🟠 mismatch means |
+|-------------------|------------------------|------------------------|
+| Active | Enabled | 🟠 disabled: rehire not re-enabled, or disabled directly in ApacheDS |
+| Terminated | Disabled | 🔴 enabled: leaver not disabled (workflow failed, or terminated before the disable logic existed – run `rule "LDAP ApacheDS - Disable Terminated Users"`) |
+| PreHire | Disabled / none | 🔴 enabled: access before the start date |
+
+Data freshness: `status` changes on **HR Lifecycle - Daily Identity Refresh**; LDAP account state on
+**LDAP ApacheDS - Account Aggregation** (or immediately when the workflow changes it).
 
 ## How statuses are compared
 
@@ -230,7 +266,7 @@ logger.ild.level=debug
 
 | Symptom | Cause / fix |
 |---------|-------------|
-| Every identity shows `(not set)` | The *Identity status attribute* name is wrong. Use the attribute's **name** (as in the Identity Mappings), not its display name. |
+| Every identity shows `(not set)` | The `status` attribute isn't populated: run `rule "HR CSV - Setup Identity Mappings"` and **HR Lifecycle - Daily Identity Refresh**. Elsewhere: the *Identity status attribute* name is wrong – use the attribute **name**, not its display name. |
 | Terminated users counted as Active | Their status value isn't in *Inactive status values* (check spelling). |
 | HR application missing from the table | Authoritative applications are excluded by default; enable *Include authoritative applications*. |
 | An application shows many amber mismatches | It may not support or report disable status (its accounts always look disabled/enabled). Add it to *Excluded applications*. |
@@ -242,4 +278,4 @@ logger.ild.level=debug
 
 | Version | Changes |
 |---------|---------|
-| 1.0.0 | KPI tiles, compliance bar, breakdown by lifecycle status and application, mismatch list with filters and CSV export, live refresh with server cache, configurable status attribute. |
+| 1.0.0 | Defaults for the `SailPointIIQ-HR-CSV` lifecycle (`status`; Terminated/PreHire inactive). KPI tiles, compliance bar, breakdown by lifecycle status and application, mismatch list with filters and CSV export, live refresh with server cache, configurable status attribute. |

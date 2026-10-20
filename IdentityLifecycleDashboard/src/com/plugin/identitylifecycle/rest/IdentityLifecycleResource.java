@@ -38,7 +38,9 @@ public class IdentityLifecycleResource extends BasePluginResource {
     public static final String SETTING_CACHE_SECONDS = "cacheSeconds";
     public static final String SETTING_MAX_MISMATCH_ROWS = "maxMismatchRows";
 
-    private static final String DEFAULT_INACTIVE_VALUES = "Inactive,Terminated,Disabled,Leaver";
+    // Defaults match SailPointIIQ-HR-CSV: identity "status" = PreHire / Active / Terminated
+    private static final String DEFAULT_STATUS_ATTRIBUTE = "status";
+    private static final String DEFAULT_INACTIVE_VALUES = "Terminated,PreHire";
     private static final int DEFAULT_CACHE_SECONDS = 30;
     private static final int DEFAULT_MAX_MISMATCH_ROWS = 2000;
 
@@ -57,7 +59,8 @@ public class IdentityLifecycleResource extends BasePluginResource {
     @Path("snapshot")
     @RequiredRight("ViewIdentityLifecycleDashboard")
     public Map<String, Object> getSnapshot(@QueryParam("refresh") boolean refresh) throws GeneralException {
-        String statusAttribute = Util.otos(getSettingString(SETTING_STATUS_ATTRIBUTE)).trim();
+        String statusSetting = getSettingString(SETTING_STATUS_ATTRIBUTE);
+        String statusAttribute = (statusSetting == null ? DEFAULT_STATUS_ATTRIBUTE : statusSetting).trim();
         String inactiveSetting = getSettingString(SETTING_INACTIVE_VALUES);
         Set<String> inactiveValues = csv(inactiveSetting == null ? DEFAULT_INACTIVE_VALUES : inactiveSetting);
         Set<String> excludedApps = csv(getSettingString(SETTING_EXCLUDED_APPS));
