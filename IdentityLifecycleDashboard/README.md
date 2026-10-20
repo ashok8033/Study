@@ -278,5 +278,5 @@ logger.ild.level=debug
 
 | Version | Changes |
 |---------|---------|
-| 1.0.1 | `minUpgradableVersion` moved to the `<Plugin>` element so upgrades are accepted. |
+| 1.0.1 | Version raised so it installs over 1.0.0 (IdentityIQ refuses a zip with the same version as the installed plugin, reporting *does not meet the minimum upgradable version requirements*). `minUpgradableVersion` stays an `<Attributes>` entry: as a `<Plugin>` attribute IdentityIQ 8.5 rejects the manifest (*Unable to process manifest file*). |
 | 1.0.0 | Defaults for the `SailPointIIQ-HR-CSV` lifecycle (`status`; Terminated/PreHire inactive). KPI tiles, compliance bar, breakdown by lifecycle status and application, mismatch list with filters and CSV export, live refresh with server cache, configurable status attribute. |

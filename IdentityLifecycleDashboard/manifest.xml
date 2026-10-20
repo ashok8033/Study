@@ -3,12 +3,12 @@
 <Plugin certificationLevel="None"
         displayName="Identity Lifecycle Dashboard"
         minSystemVersion="8.0"
-        minUpgradableVersion="1.0.0"
         name="IdentityLifecycleDashboard"
         rightRequired="ViewIdentityLifecycleDashboard"
         version="1.0.1">
   <Attributes>
     <Map>
+      <entry key="minUpgradableVersion" value="1.0.0"/>
       <entry key="fullPage">
         <value>
           <FullPage title="Identity Lifecycle Dashboard"/>
