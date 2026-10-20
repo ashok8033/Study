@@ -6,7 +6,7 @@
         minUpgradableVersion="1.0.0"
         name="TaskStatusDashboard"
         rightRequired="ViewTaskStatusDashboard"
-        version="1.0.3">
+        version="1.0.4">
   <Attributes>
     <Map>
       <entry key="settings">

@@ -6,7 +6,7 @@
         minUpgradableVersion="1.0.0"
         name="IdentityLifecycleDashboard"
         rightRequired="ViewIdentityLifecycleDashboard"
-        version="1.0.0">
+        version="1.0.1">
   <Attributes>
     <Map>
       <entry key="fullPage">
