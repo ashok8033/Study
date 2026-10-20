@@ -1,0 +1,44 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sailpoint PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  Imports everything in dependency order (rules before the application).
+  From IIQ console:   import /path/to/SailPointIIQ-HR-CSV/config/init-HR-CSV.xml
+-->
+<sailpoint>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-Customization.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-Correlation.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-ManagerCorrelation.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-IdentityCreation.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_Lifecycle-StatusAttribute.xml"/>
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-DisplayName.xml"/>
+  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-Correlation.xml"/>
+  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-Library.xml"/>
+  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-BeforeProvisioning.xml"/>
+  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-AfterProvisioning.xml"/>
+  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-Customization.xml"/>
+  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-SetAccountStatus.xml"/>
+  <!-- Catch-up for existing leavers: rule "LDAP ApacheDS - Disable Terminated Users" -->
+  <ImportAction name="include" value="Rule/Rule-LDAP_ApacheDS-DisableTerminatedUsers.xml"/>
+  <ImportAction name="include" value="Application/Application-HR_Authoritative_CSV.xml"/>
+  <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_CSV-Aggregation.xml"/>
+  <ImportAction name="include" value="Application/Application-LDAP_ApacheDS.xml"/>
+  <ImportAction name="include" value="TaskDefinition/TaskDefinition-LDAP_ApacheDS-Aggregation.xml"/>
+  <ImportAction name="include" value="Bundle/Bundle-LDAP_ApacheDS-ITRoles.xml"/>
+  <ImportAction name="include" value="Bundle/Bundle-Birthright-BusinessRoles.xml"/>
+  <ImportAction name="include" value="ManagedAttribute/ManagedAttribute-LDAP_Office365Access.xml"/>
+  <ImportAction name="include" value="Bundle/Bundle-Office365Access.xml"/>
+  <ImportAction name="include" value="EmailTemplate/EmailTemplate-HR_Lifecycle-StatusChange.xml"/>
+  <ImportAction name="include" value="Workflow/Workflow-HR_Lifecycle-StatusChange.xml"/>
+  <ImportAction name="include" value="IdentityTrigger/IdentityTrigger-HR_Lifecycle-StatusChange.xml"/>
+  <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_Lifecycle-DailyRefresh.xml"/>
+  <!-- Imported here, but must be RUN once afterwards: rule "HR CSV - Setup Identity Mappings" -->
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-SetupIdentityMappings.xml"/>
+  <!-- Run once afterwards: rule "HR CSV - Show Attributes On Identity Page" -->
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-ShowOnIdentityPage.xml"/>
+  <!-- Read-only troubleshooting: rule "HR CSV - Diagnose" -->
+  <ImportAction name="include" value="Rule/Rule-HR_CSV-Diagnose.xml"/>
+  <!-- Targeted aggregation of one account: rule "Aggregate Single Account" -->
+  <ImportAction name="include" value="Rule/Rule-Aggregate-Single-Account.xml"/>
+  <!-- Troubleshooting: rule "HR Lifecycle - Send Test Email" -->
+  <ImportAction name="include" value="Rule/Rule-HR_Lifecycle-SendTestEmail.xml"/>
+</sailpoint>

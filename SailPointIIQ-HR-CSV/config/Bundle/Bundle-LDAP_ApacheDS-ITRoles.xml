@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sailpoint PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  IT roles: each one grants one LDAP ApacheDS group. If the identity has no
+  LDAP account yet, provisioning the role first creates the account using the
+  application's Create Account policy.
+-->
+<sailpoint>
+
+  <Bundle displayName="LDAP - All Employees" name="LDAP - All Employees" type="it">
+    <Description>Membership of cn=AllEmployees in LDAP ApacheDS.</Description>
+    <Owner>
+      <Reference class="sailpoint.object.Identity" name="spadmin"/>
+    </Owner>
+    <Profiles>
+      <Profile>
+        <ApplicationRef>
+          <Reference class="sailpoint.object.Application" name="LDAP ApacheDS"/>
+        </ApplicationRef>
+        <Constraints>
+          <Filter operation="CONTAINS_ALL" property="groups">
+            <Value>
+              <List>
+                <String>cn=AllEmployees,ou=groups,dc=example,dc=com</String>
+              </List>
+            </Value>
+          </Filter>
+        </Constraints>
+      </Profile>
+    </Profiles>
+  </Bundle>
+
+  <Bundle displayName="LDAP - Contractors" name="LDAP - Contractors" type="it">
+    <Description>Membership of cn=Contractors in LDAP ApacheDS.</Description>
+    <Owner>
+      <Reference class="sailpoint.object.Identity" name="spadmin"/>
+    </Owner>
+    <Profiles>
+      <Profile>
+        <ApplicationRef>
+          <Reference class="sailpoint.object.Application" name="LDAP ApacheDS"/>
+        </ApplicationRef>
+        <Constraints>
+          <Filter operation="CONTAINS_ALL" property="groups">
+            <Value>
+              <List>
+                <String>cn=Contractors,ou=groups,dc=example,dc=com</String>
+              </List>
+            </Value>
+          </Filter>
+        </Constraints>
+      </Profile>
+    </Profiles>
+  </Bundle>
+
+  <Bundle displayName="LDAP - Managers" name="LDAP - Managers" type="it">
+    <Description>Membership of cn=Managers in LDAP ApacheDS.</Description>
+    <Owner>
+      <Reference class="sailpoint.object.Identity" name="spadmin"/>
+    </Owner>
+    <Profiles>
+      <Profile>
+        <ApplicationRef>
+          <Reference class="sailpoint.object.Application" name="LDAP ApacheDS"/>
+        </ApplicationRef>
+        <Constraints>
+          <Filter operation="CONTAINS_ALL" property="groups">
+            <Value>
+              <List>
+                <String>cn=Managers,ou=groups,dc=example,dc=com</String>
+              </List>
+            </Value>
+          </Filter>
+        </Constraints>
+      </Profile>
+    </Profiles>
+  </Bundle>
+
+</sailpoint>

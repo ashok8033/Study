@@ -1,0 +1,32 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="LDAP ApacheDS - Correlation" type="Correlation">
+  <Description>
+    Correlates an LDAP account to the Identity whose name equals the account's
+    employeeNumber (identities are named after their HR employee number).
+  </Description>
+  <Signature returnType="Map">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="environment" type="Map"/>
+      <Argument name="application" type="Application"/>
+      <Argument name="account" type="ResourceObject"/>
+      <Argument name="link" type="Link"/>
+    </Inputs>
+    <Returns>
+      <Argument name="identityName"/>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+  import java.util.HashMap;
+  import java.util.Map;
+
+  Map result = new HashMap();
+  String empNo = (account == null) ? null : account.getStringAttribute("employeeNumber");
+  if (empNo != null && empNo.trim().length() > 0) {
+      result.put("identityName", empNo.trim());
+  }
+  return result;
+  ]]></Source>
+</Rule>

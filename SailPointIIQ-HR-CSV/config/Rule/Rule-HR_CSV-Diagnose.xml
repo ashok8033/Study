@@ -1,0 +1,106 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="HR CSV - Diagnose">
+  <Description>
+    Read-only troubleshooting rule. Changes nothing. Checks, for one identity:
+      1. the identity mappings stored in the database (ObjectConfig "Identity")
+      2. the copy of that config IIQ has cached in memory (used by refresh)
+      3. the HR account (link) values
+      4. the values stored on the identity
+      5. what the Status rule returns when run directly
+
+    Run it from the IIQ console:   rule "HR CSV - Diagnose"
+    To check someone other than 1000, change IDENTITY_NAME below.
+  </Description>
+  <Source><![CDATA[
+  import sailpoint.object.Application;
+  import sailpoint.object.Identity;
+  import sailpoint.object.Link;
+  import sailpoint.object.ObjectAttribute;
+  import sailpoint.object.ObjectConfig;
+  import sailpoint.object.Rule;
+  import java.util.HashMap;
+  import java.util.List;
+  import java.util.Map;
+
+  String IDENTITY_NAME = "1000";
+  String APP_NAME = "HR Authoritative CSV";
+  String[] ATTRS = { "employeeNumber", "startDate", "endDate", "country",
+                     "employeeType", "jobDescription", "isManager", "status",
+                     "manager", "inactive" };
+
+  StringBuilder sb = new StringBuilder();
+
+  String describe(ObjectConfig oc, String n) {
+      if (oc == null) return "no config";
+      ObjectAttribute oa = oc.getObjectAttribute(n);
+      if (oa == null) return "MISSING";
+      StringBuilder d = new StringBuilder("ok");
+      List sources = oa.getSources();
+      d.append(", sources=").append(sources == null ? 0 : sources.size());
+      if (sources != null) {
+          for (Object o : sources) {
+              sailpoint.object.AttributeSource s = (sailpoint.object.AttributeSource) o;
+              d.append(" [").append(s.getApplication() == null ? "?" : s.getApplication().getName())
+               .append(":").append(s.getName()).append("]");
+          }
+      }
+      Rule r = oa.getRule();
+      d.append(", globalRule=").append(r == null ? "none" : r.getName());
+      return d.toString();
+  }
+
+  // 1 + 2. Identity mappings: database vs in-memory cache
+  ObjectConfig dbConfig = context.getObjectByName(ObjectConfig.class, "Identity");
+  ObjectConfig cached = null;
+  try { cached = ObjectConfig.getObjectConfig(Identity.class); } catch (Exception e) { }
+
+  sb.append("== 1. Identity mappings in DATABASE ==\n");
+  for (String n : ATTRS) sb.append("  ").append(n).append(": ").append(describe(dbConfig, n)).append("\n");
+  sb.append("== 2. Identity mappings in MEMORY CACHE (used by refresh) ==\n");
+  for (String n : ATTRS) sb.append("  ").append(n).append(": ").append(describe(cached, n)).append("\n");
+
+  // 3. HR account
+  Identity id = context.getObjectByName(Identity.class, IDENTITY_NAME);
+  if (id == null) {
+      sb.append("== Identity '").append(IDENTITY_NAME).append("' NOT FOUND ==\n");
+      return sb.toString();
+  }
+  Application app = context.getObjectByName(Application.class, APP_NAME);
+  Link link = (app == null) ? null : id.getLink(app);
+  sb.append("== 3. HR account (link) for ").append(IDENTITY_NAME).append(" ==\n");
+  if (link == null) {
+      sb.append("  NO HR LINK (application found: ").append(app != null).append(")\n");
+  } else {
+      sb.append("  ").append(link.getAttributes()).append("\n");
+  }
+
+  // 4. Identity values
+  sb.append("== 4. Values stored on identity ").append(IDENTITY_NAME).append(" ==\n");
+  for (String n : ATTRS) {
+      Object v = "manager".equals(n) ? id.getManager() : id.getAttribute(n);
+      sb.append("  ").append(n).append(" = ").append(v).append("\n");
+  }
+  sb.append("  all attribute keys: ").append(id.getAttributes() == null ? "none" : id.getAttributes().keySet()).append("\n");
+
+  // 5. Run the Status rule directly
+  sb.append("== 5. Status rule run directly ==\n");
+  Rule statusRule = context.getObjectByName(Rule.class, "HR Lifecycle - Status Attribute");
+  if (statusRule == null) {
+      sb.append("  RULE NOT FOUND\n");
+  } else {
+      try {
+          Map args = new HashMap();
+          args.put("identity", id);
+          args.put("environment", new HashMap());
+          args.put("attributeDefinition", null);
+          args.put("oldValue", null);
+          sb.append("  returned: ").append(context.runRule(statusRule, args)).append("\n");
+      } catch (Exception e) {
+          sb.append("  ERROR: ").append(e.toString()).append("\n");
+      }
+  }
+
+  return sb.toString();
+  ]]></Source>
+</Rule>

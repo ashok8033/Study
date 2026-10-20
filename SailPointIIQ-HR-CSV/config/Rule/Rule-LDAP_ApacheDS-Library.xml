@@ -1,0 +1,134 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="LDAP ApacheDS - Library">
+  <Description>
+    Shared functions for LDAP ApacheDS group membership and account status,
+    used by the Before / After Provisioning rules and the Customization rule. Talks to ApacheDS
+    directly with JNDI, using the host, port, user and password configured on
+    the LDAP ApacheDS application.
+  </Description>
+  <Source><![CDATA[
+  import java.text.SimpleDateFormat;
+  import java.util.ArrayList;
+  import java.util.Date;
+  import java.util.HashMap;
+  import java.util.Hashtable;
+  import java.util.List;
+  import java.util.Map;
+  import java.util.TimeZone;
+  import javax.naming.Context;
+  import javax.naming.NamingEnumeration;
+  import javax.naming.directory.AttributeInUseException;
+  import javax.naming.directory.BasicAttribute;
+  import javax.naming.directory.DirContext;
+  import javax.naming.directory.InitialDirContext;
+  import javax.naming.directory.ModificationItem;
+  import javax.naming.directory.NoSuchAttributeException;
+  import javax.naming.directory.SearchControls;
+  import javax.naming.directory.SearchResult;
+
+  // Group container and membership attribute (change here if your layout differs):
+  //   groups under  ou=groups,dc=example,dc=com
+  //   member attr   uniqueMember
+
+  // Opens a connection using the application's own connection settings
+  DirContext ldapConnect(Object ctxArg, Object app) {
+      String password = app.getStringAttributeValue("password");
+      try {
+          password = ctxArg.decrypt(password);
+      } catch (Exception e) {
+          // value was not encrypted; use it as it is
+      }
+      Hashtable env = new Hashtable();
+      env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory");
+      env.put(Context.PROVIDER_URL, "ldap://" + app.getStringAttributeValue("host") + ":"
+                                    + app.getStringAttributeValue("port"));
+      env.put(Context.SECURITY_AUTHENTICATION, "simple");
+      env.put(Context.SECURITY_PRINCIPAL, app.getStringAttributeValue("user"));
+      env.put(Context.SECURITY_CREDENTIALS, password);
+      return new InitialDirContext(env);
+  }
+
+  // Adds (add=true) or removes a user DN from a group. Already a member /
+  // not a member are treated as success.
+  void ldapSetMember(DirContext ldap, String groupDn, String userDn, boolean add) {
+      int op = add ? DirContext.ADD_ATTRIBUTE : DirContext.REMOVE_ATTRIBUTE;
+      ModificationItem[] mods = new ModificationItem[1];
+      mods[0] = new ModificationItem(op, new BasicAttribute("uniqueMember", userDn));
+      try {
+          ldap.modifyAttributes(groupDn, mods);
+      } catch (AttributeInUseException e) {
+          // already a member
+      } catch (NoSuchAttributeException e) {
+          // was not a member
+      }
+  }
+
+  // Disables (true) or enables (false) an account with the ApacheDS admin lock:
+  // pwdAccountLockedTime = 000001010000Z means "locked until an admin unlocks it".
+  void ldapSetDisabled(DirContext ldap, String userDn, boolean disable) {
+      ModificationItem[] mods = new ModificationItem[1];
+      if (disable) {
+          mods[0] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE,
+                  new BasicAttribute("pwdAccountLockedTime", "000001010000Z"));
+          ldap.modifyAttributes(userDn, mods);
+      } else {
+          mods[0] = new ModificationItem(DirContext.REMOVE_ATTRIBUTE,
+                  new BasicAttribute("pwdAccountLockedTime"));
+          try {
+              ldap.modifyAttributes(userDn, mods);
+          } catch (NoSuchAttributeException e) {
+              // not locked - already enabled
+          }
+      }
+  }
+
+  // Returns the DNs of the groups under ou=groups,dc=example,dc=com that contain userDn
+  List ldapGroupsOf(DirContext ldap, String userDn) {
+      List groups = new ArrayList();
+      SearchControls sc = new SearchControls();
+      sc.setSearchScope(SearchControls.SUBTREE_SCOPE);
+      sc.setReturningAttributes(new String[0]);
+      Object[] args = new Object[1];
+      args[0] = userDn;
+      NamingEnumeration results = ldap.search("ou=groups,dc=example,dc=com",
+              "(uniqueMember={0})", args, sc);
+      while (results.hasMore()) {
+          SearchResult r = (SearchResult) results.next();
+          groups.add(r.getNameInNamespace());
+      }
+      return groups;
+  }
+
+  // Reads the named attributes (operational ones included, e.g. pwdAccountLockedTime,
+  // createTimestamp) of one entry. Returns attribute name -> first value as String.
+  // Missing attributes are simply not in the map.
+  Map ldapReadAttributes(DirContext ldap, String dn, String[] attrIds) {
+      Map values = new HashMap();
+      javax.naming.directory.Attributes attrs = ldap.getAttributes(dn, attrIds);
+      NamingEnumeration all = attrs.getAll();
+      while (all.hasMore()) {
+          javax.naming.directory.Attribute a = (javax.naming.directory.Attribute) all.next();
+          Object v = a.get();
+          if (v != null) values.put(a.getID(), v.toString());
+      }
+      return values;
+  }
+
+  // LDAP generalized time (20261013101500Z or 20261013101500.123Z, UTC) -> "13-10-2026 10:15:00 UTC".
+  // Returns the input unchanged if it cannot be parsed.
+  String ldapFormatTime(String value) {
+      if (value == null || value.length() < 14) return value;
+      try {
+          SimpleDateFormat in = new SimpleDateFormat("yyyyMMddHHmmss");
+          in.setTimeZone(TimeZone.getTimeZone("UTC"));
+          Date d = in.parse(value.substring(0, 14));
+          SimpleDateFormat out = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
+          out.setTimeZone(TimeZone.getTimeZone("UTC"));
+          return out.format(d) + " UTC";
+      } catch (Exception e) {
+          return value;
+      }
+  }
+  ]]></Source>
+</Rule>

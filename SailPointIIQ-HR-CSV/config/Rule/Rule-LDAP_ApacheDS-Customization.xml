@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="LDAP ApacheDS - Customization" type="ResourceObjectCustomization">
+  <Description>
+    Runs for every account read during LDAP ApacheDS aggregation. One connection
+    is reused for the whole aggregation.
+
+    1. Groups: looks up the groups whose uniqueMember contains the account DN
+       and puts them in "groups", so the IT roles are detected as met.
+
+    2. Account status, from the ApacheDS password policy attribute
+       pwdAccountLockedTime (an operational attribute, so it is read by name):
+         not present            -> accountStatus = Active
+         000001010000Z          -> accountStatus = Disabled  (admin lock)  IIQDisabled = true
+         any other timestamp    -> accountStatus = Locked    (failed logins) IIQLocked = true
+       Also brings back pwdChangedTime, pwdFailureTime, createTimestamp and
+       modifyTimestamp, formatted as DD-MM-YYYY HH:mm:ss UTC.
+  </Description>
+  <Signature returnType="ResourceObject">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="object" type="ResourceObject"/>
+      <Argument name="application" type="Application"/>
+      <Argument name="connector"/>
+      <Argument name="state"/>
+    </Inputs>
+    <Returns>
+      <Argument name="object" type="ResourceObject"/>
+    </Returns>
+  </Signature>
+  <ReferencedRules>
+    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - Library"/>
+  </ReferencedRules>
+  <Source><![CDATA[
+  import java.util.Map;
+  import javax.naming.directory.DirContext;
+  import sailpoint.object.ResourceObject;
+
+  String ADMIN_LOCK = "000001010000Z";
+  String[] STATUS_ATTRS = { "pwdAccountLockedTime", "pwdChangedTime", "pwdFailureTime",
+                            "createTimestamp", "modifyTimestamp" };
+
+  if (object == null || !"account".equals(object.getObjectType())) return object;
+
+  try {
+      DirContext ldap = (state == null) ? null : (DirContext) state.get("hrLdapContext");
+      if (ldap == null) {
+          ldap = ldapConnect(context, application);
+          if (state != null) state.put("hrLdapContext", ldap);
+      }
+      String dn = object.getIdentity();
+
+      // 1. Groups
+      object.setAttribute("groups", ldapGroupsOf(ldap, dn));
+
+      // 2. Account status
+      Map st = ldapReadAttributes(ldap, dn, STATUS_ATTRS);
+      String lockedTime = (String) st.get("pwdAccountLockedTime");
+      String status = "Active";
+      if (lockedTime != null) {
+          status = ADMIN_LOCK.equals(lockedTime) ? "Disabled" : "Locked";
+      }
+      object.setAttribute("accountStatus", status);
+      object.setAttribute("pwdAccountLockedTime", lockedTime);   // raw value, empty when active
+      object.setAttribute("IIQDisabled", Boolean.valueOf("Disabled".equals(status)));
+      object.setAttribute("IIQLocked", Boolean.valueOf("Locked".equals(status)));
+      object.setAttribute("lockedTime",
+              (lockedTime == null || ADMIN_LOCK.equals(lockedTime)) ? null : ldapFormatTime(lockedTime));
+      object.setAttribute("passwordLastChanged", ldapFormatTime((String) st.get("pwdChangedTime")));
+      object.setAttribute("lastFailedLogin", ldapFormatTime((String) st.get("pwdFailureTime")));
+      object.setAttribute("createdOn", ldapFormatTime((String) st.get("createTimestamp")));
+      object.setAttribute("modifiedOn", ldapFormatTime((String) st.get("modifyTimestamp")));
+  } catch (Exception e) {
+      log.error("LDAP ApacheDS: could not read groups/status for " + object.getIdentity() + ": " + e);
+  }
+  return object;
+  ]]></Source>
+</Rule>

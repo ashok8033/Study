@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="HR Lifecycle - Send Test Email">
+  <Description>
+    Troubleshooting rule. Prints the IIQ mail settings, checks the lifecycle
+    objects exist, and sends ONE test email using the
+    "HR Lifecycle - Status Change" template, without needing a status change.
+
+    Run it from the IIQ console:   rule "HR Lifecycle - Send Test Email"
+  </Description>
+  <Source><![CDATA[
+  import java.util.HashMap;
+  import java.util.Map;
+  import sailpoint.object.Configuration;
+  import sailpoint.object.EmailOptions;
+  import sailpoint.object.EmailTemplate;
+  import sailpoint.object.IdentityTrigger;
+  import sailpoint.object.Workflow;
+
+  String TO = "ashokhearts@gmail.com";
+  StringBuilder sb = new StringBuilder();
+
+  // 1. Mail settings (Global Settings > IdentityIQ Configuration > Mail Settings)
+  Configuration sys = context.getConfiguration();
+  String[] keys = { "emailNotifierType", "defaultEmailHost", "defaultEmailPort",
+                    "defaultEmailFromAddress", "redirectingEmailNotifierAddress",
+                    "redirectingEmailNotifierFilename", "smtpEncryptionType",
+                    "smtpUsername" };
+  sb.append("== 1. Mail settings ==\n");
+  for (String k : keys) {
+      sb.append("  ").append(k).append(" = ").append(sys == null ? null : sys.get(k)).append("\n");
+  }
+
+  // 2. Lifecycle objects
+  sb.append("== 2. Lifecycle objects ==\n");
+  sb.append("  IdentityTrigger 'HR Lifecycle - Status Change': ")
+    .append(context.getObjectByName(IdentityTrigger.class, "HR Lifecycle - Status Change") != null ? "found" : "MISSING").append("\n");
+  sb.append("  Workflow 'HR Lifecycle - Status Change Notification': ")
+    .append(context.getObjectByName(Workflow.class, "HR Lifecycle - Status Change Notification") != null ? "found" : "MISSING").append("\n");
+  EmailTemplate template = context.getObjectByName(EmailTemplate.class, "HR Lifecycle - Status Change");
+  sb.append("  EmailTemplate 'HR Lifecycle - Status Change': ")
+    .append(template != null ? "found" : "MISSING").append("\n");
+
+  // 3. Send a test email
+  sb.append("== 3. Test email to ").append(TO).append(" ==\n");
+  if (template == null) {
+      sb.append("  SKIPPED: import the email template first.\n");
+      return sb.toString();
+  }
+  Map vars = new HashMap();
+  vars.put("identityName", "TEST");
+  vars.put("displayName", "Test User");
+  vars.put("oldStatus", "PreHire");
+  vars.put("newStatus", "Active");
+  vars.put("startDate", "07-10-2026");
+  vars.put("endDate", "");
+  vars.put("jobDescription", "Test email from IIQ");
+  vars.put("managerName", "Ashok Kumar");
+  try {
+      EmailOptions options = new EmailOptions(TO, vars);
+      context.sendEmailNotification(template, options);
+      sb.append("  SENT without error. Check the inbox and the Spam folder.\n");
+      sb.append("  If emailNotifierType is not smtp, IIQ only redirected or logged it.\n");
+  } catch (Exception e) {
+      sb.append("  FAILED: ").append(e.toString()).append("\n");
+      Throwable c = e.getCause();
+      while (c != null) {
+          sb.append("    caused by: ").append(c.toString()).append("\n");
+          c = c.getCause();
+      }
+  }
+  return sb.toString();
+  ]]></Source>
+</Rule>

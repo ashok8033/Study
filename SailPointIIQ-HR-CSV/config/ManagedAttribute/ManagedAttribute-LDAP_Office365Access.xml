@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE ManagedAttribute PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  The LDAP group cn=Office365Access as an entitlement in the IIQ catalog
+  (Entitlement Catalog), requestable, with a display name and description.
+  The LDAP ApacheDS group aggregation would create this too; importing it
+  means the entitlement exists before the first aggregation.
+-->
+<ManagedAttribute attribute="groups"
+                  displayName="Office365Access"
+                  requestable="true"
+                  type="group"
+                  value="cn=Office365Access,ou=groups,dc=example,dc=com">
+  <ApplicationRef>
+    <Reference class="sailpoint.object.Application" name="LDAP ApacheDS"/>
+  </ApplicationRef>
+  <Attributes>
+    <Map>
+      <entry key="sysDescriptions">
+        <value>
+          <Map>
+            <entry key="en_US" value="Membership of the LDAP group Office365Access. Grants access to Office 365."/>
+          </Map>
+        </value>
+      </entry>
+    </Map>
+  </Attributes>
+  <Owner>
+    <Reference class="sailpoint.object.Identity" name="spadmin"/>
+  </Owner>
+</ManagedAttribute>

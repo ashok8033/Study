@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="HR CSV - Customization" type="ResourceObjectCustomization">
+  <Description>
+    Runs for every row read from the HR CSV during aggregation.
+    - Trims all string values and turns empty strings into null
+    - Validates startDate / endDate are in DD-MM-YYYY format
+    - Normalises isManager to Y or N (blank or invalid values become N)
+    - Calculates "status" (PreHire / Active / Terminated) and "inactive"
+  </Description>
+  <Signature returnType="ResourceObject">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="object" type="ResourceObject"/>
+      <Argument name="application" type="Application"/>
+      <Argument name="connector"/>
+      <Argument name="state"/>
+    </Inputs>
+    <Returns>
+      <Argument name="object" type="ResourceObject"/>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+  import java.text.SimpleDateFormat;
+  import java.util.Calendar;
+  import java.util.Date;
+  import java.util.ArrayList;
+  import java.util.List;
+  import sailpoint.object.ResourceObject;
+
+  String DATE_FORMAT = "dd-MM-yyyy";
+
+  Date parseDate(String value, String attrName, String accountId) {
+      if (value == null) return null;
+      try {
+          SimpleDateFormat f = new SimpleDateFormat(DATE_FORMAT);
+          f.setLenient(false);
+          return f.parse(value);
+      } catch (Exception e) {
+          log.error("HR CSV - account " + accountId + ": invalid " + attrName +
+                    " '" + value + "', expected DD-MM-YYYY");
+          return null;
+      }
+  }
+
+  if (object == null) return object;
+
+  // 1. Trim every string value; blank -> null
+  List names = new ArrayList(object.getAttributes().keySet());
+  for (Object n : names) {
+      Object v = object.getAttribute((String) n);
+      if (v instanceof String) {
+          String s = ((String) v).trim();
+          object.setAttribute((String) n, s.length() == 0 ? null : s);
+      }
+  }
+
+  String accountId = object.getIdentity();
+
+  // 2. Dates
+  Date start = parseDate((String) object.getAttribute("startDate"), "startDate", accountId);
+  Date end   = parseDate((String) object.getAttribute("endDate"),   "endDate",   accountId);
+
+  // 3. Manager flag: only Y or N
+  String isMgr = (String) object.getAttribute("isManager");
+  if (isMgr == null) {
+      object.setAttribute("isManager", "N");
+  } else if ("Y".equalsIgnoreCase(isMgr) || "N".equalsIgnoreCase(isMgr)) {
+      object.setAttribute("isManager", isMgr.toUpperCase());
+  } else {
+      log.error("HR CSV - account " + accountId + ": invalid isManager '" + isMgr +
+                "', expected Y or N - defaulting to N");
+      object.setAttribute("isManager", "N");
+  }
+
+  // 4. Status
+  // Compare by whole day: still Active on the end date itself
+  Calendar cal = Calendar.getInstance();
+  cal.set(Calendar.HOUR_OF_DAY, 0);
+  cal.set(Calendar.MINUTE, 0);
+  cal.set(Calendar.SECOND, 0);
+  cal.set(Calendar.MILLISECOND, 0);
+  Date today = cal.getTime();
+
+  String status = "Active";
+  if (end != null && end.before(today)) {
+      status = "Terminated";
+  } else if (start != null && start.after(today)) {
+      status = "PreHire";
+  }
+
+  object.setAttribute("status", status);
+  object.setAttribute("inactive", !"Active".equals(status));
+  // Shows the HR account as disabled (red) on Application Accounts once Terminated
+  object.setAttribute("IIQDisabled", Boolean.valueOf("Terminated".equals(status)));
+
+  if (log.isDebugEnabled()) {
+      log.debug("HR CSV - account " + accountId + " status=" + status);
+  }
+
+  return object;
+  ]]></Source>
+</Rule>

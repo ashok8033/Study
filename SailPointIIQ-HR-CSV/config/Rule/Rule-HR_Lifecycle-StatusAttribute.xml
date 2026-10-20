@@ -1,0 +1,89 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="HR Lifecycle - Status Attribute" type="IdentityAttribute">
+  <Description>
+    Global rule for the "status" identity attribute. Runs on every identity
+    refresh (with "Refresh identity attributes" ticked) and returns:
+
+      PreHire    - today is before startDate
+      Active     - startDate &lt;= today &lt;= endDate (or no endDate)
+      Terminated - today is after endDate
+
+    Dates come from the HR Authoritative CSV account (DD-MM-YYYY). Because it is
+    recalculated on refresh, people move between states on the right day even
+    when the CSV row itself has not changed.
+  </Description>
+  <Signature returnType="String">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="environment" type="Map"/>
+      <Argument name="identity" type="Identity"/>
+      <Argument name="attributeDefinition" type="AttributeDefinition"/>
+      <Argument name="oldValue"/>
+    </Inputs>
+    <Returns>
+      <Argument name="value" type="String"/>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+  import java.text.SimpleDateFormat;
+  import java.util.Calendar;
+  import java.util.Date;
+  import sailpoint.object.Application;
+  import sailpoint.object.Link;
+
+  String APP_NAME = "HR Authoritative CSV";
+
+  Date parseDate(Object value) {
+      if (value == null) return null;
+      String s = value.toString().trim();
+      if (s.length() == 0) return null;
+      try {
+          SimpleDateFormat f = new SimpleDateFormat("dd-MM-yyyy");
+          f.setLenient(false);
+          return f.parse(s);
+      } catch (Exception e) {
+          log.error("HR Lifecycle - " + identity.getName() + ": invalid date '" + s + "'");
+          return null;
+      }
+  }
+
+  // Read the dates from the HR account; fall back to the identity attributes
+  Object startValue = null;
+  Object endValue = null;
+  Application app = context.getObjectByName(Application.class, APP_NAME);
+  Link hr = (app == null) ? null : identity.getLink(app);
+  if (hr != null) {
+      startValue = hr.getAttribute("startDate");
+      endValue   = hr.getAttribute("endDate");
+  } else {
+      startValue = identity.getAttribute("startDate");
+      endValue   = identity.getAttribute("endDate");
+  }
+
+  Date start = parseDate(startValue);
+  Date end   = parseDate(endValue);
+
+  // No HR data at all: keep whatever we had before
+  if (start == null && end == null) {
+      return oldValue;
+  }
+
+  // Midnight today, so comparisons are by whole day
+  Calendar cal = Calendar.getInstance();
+  cal.set(Calendar.HOUR_OF_DAY, 0);
+  cal.set(Calendar.MINUTE, 0);
+  cal.set(Calendar.SECOND, 0);
+  cal.set(Calendar.MILLISECOND, 0);
+  Date today = cal.getTime();
+
+  if (end != null && end.before(today)) {
+      return "Terminated";
+  }
+  if (start != null && start.after(today)) {
+      return "PreHire";
+  }
+  return "Active";
+  ]]></Source>
+</Rule>

@@ -1,0 +1,67 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="LDAP ApacheDS - Before Provisioning" type="BeforeProvisioning">
+  <Description>
+    "groups" is an IIQ entitlement, not an LDAP attribute, so ApacheDS rejects it
+    (NO_SUCH_ATTRIBUTE). This rule takes every "groups" change out of the
+    LDAP request and stores it on the account request as arguments
+    (hrGroupsAdd / hrGroupsRemove). The After Provisioning rule then applies
+    them as uniqueMember changes on the groups.
+  </Description>
+  <Signature>
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="plan" type="ProvisioningPlan"/>
+      <Argument name="application" type="Application"/>
+    </Inputs>
+  </Signature>
+  <Source><![CDATA[
+  import java.util.ArrayList;
+  import java.util.Iterator;
+  import java.util.List;
+  import sailpoint.object.Attributes;
+  import sailpoint.object.ProvisioningPlan;
+  import sailpoint.object.ProvisioningPlan.AccountRequest;
+  import sailpoint.object.ProvisioningPlan.AttributeRequest;
+
+  if (plan == null || plan.getAccountRequests() == null) return;
+
+  for (Object o : plan.getAccountRequests()) {
+      AccountRequest acct = (AccountRequest) o;
+      List attrReqs = acct.getAttributeRequests();
+      if (attrReqs == null) continue;
+
+      List adds = new ArrayList();
+      List removes = new ArrayList();
+      Iterator it = attrReqs.iterator();
+      while (it.hasNext()) {
+          AttributeRequest req = (AttributeRequest) it.next();
+          if (!"groups".equals(req.getName())) continue;
+
+          Object value = req.getValue();
+          List values = new ArrayList();
+          if (value instanceof List) values.addAll((List) value);
+          else if (value != null) values.add(value);
+
+          if (ProvisioningPlan.Operation.Remove.equals(req.getOperation())) {
+              removes.addAll(values);
+          } else {
+              adds.addAll(values);
+          }
+          it.remove();
+      }
+
+      if (adds.isEmpty() && removes.isEmpty()) continue;
+      Attributes args = acct.getArguments();
+      if (args == null) {
+          args = new Attributes();
+          acct.setArguments(args);
+      }
+      args.put("hrGroupsAdd", adds);
+      args.put("hrGroupsRemove", removes);
+      log.debug("LDAP ApacheDS: moved group changes for " + acct.getNativeIdentity()
+                + " add=" + adds + " remove=" + removes);
+  }
+  ]]></Source>
+</Rule>

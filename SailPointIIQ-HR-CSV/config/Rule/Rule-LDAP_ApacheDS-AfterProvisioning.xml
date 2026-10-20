@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="LDAP ApacheDS - After Provisioning" type="AfterProvisioning">
+  <Description>
+    Applies the group changes saved by the Before Provisioning rule: adds or
+    removes the account DN in each group's uniqueMember attribute. Skipped if
+    the account request itself failed.
+  </Description>
+  <Signature>
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="plan" type="ProvisioningPlan"/>
+      <Argument name="application" type="Application"/>
+      <Argument name="result"/>
+    </Inputs>
+  </Signature>
+  <ReferencedRules>
+    <Reference class="sailpoint.object.Rule" name="LDAP ApacheDS - Library"/>
+  </ReferencedRules>
+  <Source><![CDATA[
+  import java.util.List;
+  import javax.naming.directory.DirContext;
+  import sailpoint.object.Attributes;
+  import sailpoint.object.ProvisioningPlan;
+  import sailpoint.object.ProvisioningPlan.AccountRequest;
+  import sailpoint.object.ProvisioningPlan.AttributeRequest;
+  import sailpoint.object.ProvisioningResult;
+
+  if (plan == null || plan.getAccountRequests() == null) return;
+
+  DirContext ldap = null;
+  try {
+      for (Object o : plan.getAccountRequests()) {
+          AccountRequest acct = (AccountRequest) o;
+          Attributes args = acct.getArguments();
+          if (args == null) continue;
+          List adds = (List) args.get("hrGroupsAdd");
+          List removes = (List) args.get("hrGroupsRemove");
+          if ((adds == null || adds.isEmpty()) && (removes == null || removes.isEmpty())) continue;
+
+          // Don't touch groups if the account change itself failed
+          ProvisioningResult r = acct.getResult();
+          if (r == null) r = plan.getResult();
+          if (r != null && r.isFailed()) {
+              log.error("LDAP ApacheDS: account request failed, group changes skipped for "
+                        + acct.getNativeIdentity());
+              continue;
+          }
+
+          String userDn = acct.getNativeIdentity();
+          if (userDn == null) {
+              AttributeRequest dnReq = acct.getAttributeRequest("dn");
+              if (dnReq != null) userDn = (String) dnReq.getValue();
+          }
+          if (userDn == null) {
+              log.error("LDAP ApacheDS: no DN on account request, group changes skipped");
+              continue;
+          }
+
+          if (ldap == null) ldap = ldapConnect(context, application);
+          if (adds != null) {
+              for (Object g : adds) ldapSetMember(ldap, (String) g, userDn, true);
+          }
+          if (removes != null) {
+              for (Object g : removes) ldapSetMember(ldap, (String) g, userDn, false);
+          }
+          log.info("LDAP ApacheDS: " + userDn + " groups added=" + adds + " removed=" + removes);
+      }
+  } finally {
+      if (ldap != null) ldap.close();
+  }
+  ]]></Source>
+</Rule>

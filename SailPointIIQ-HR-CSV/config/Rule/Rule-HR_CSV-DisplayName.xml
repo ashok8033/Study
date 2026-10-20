@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="HR CSV - Display Name" type="IdentityAttribute">
+  <Description>
+    Global rule for the identity attribute "displayName" (the name shown on
+    View Identity and in search results). Returns "firstName lastName" from the
+    HR Authoritative CSV account, so a name change in HR also changes the
+    display name on the next aggregation / refresh. Without it, displayName is
+    only set once, by the Identity Creation rule.
+  </Description>
+  <Signature returnType="String">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="environment" type="Map"/>
+      <Argument name="identity" type="Identity"/>
+      <Argument name="attributeDefinition" type="AttributeDefinition"/>
+      <Argument name="oldValue"/>
+    </Inputs>
+    <Returns>
+      <Argument name="value" type="String"/>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+  import sailpoint.object.Application;
+  import sailpoint.object.Link;
+
+  String first = null;
+  String last = null;
+
+  // Read from the HR account; fall back to the identity's own names
+  Application app = context.getObjectByName(Application.class, "HR Authoritative CSV");
+  Link hr = (app == null) ? null : identity.getLink(app);
+  if (hr != null) {
+      first = (String) hr.getAttribute("firstName");
+      last  = (String) hr.getAttribute("lastName");
+  }
+  if (first == null) first = identity.getFirstname();
+  if (last == null)  last  = identity.getLastname();
+
+  StringBuilder dn = new StringBuilder();
+  if (first != null && first.trim().length() > 0) dn.append(first.trim());
+  if (last != null && last.trim().length() > 0) {
+      if (dn.length() > 0) dn.append(" ");
+      dn.append(last.trim());
+  }
+
+  // Nothing to build from: keep what we had
+  return dn.length() > 0 ? dn.toString() : oldValue;
+  ]]></Source>
+</Rule>
