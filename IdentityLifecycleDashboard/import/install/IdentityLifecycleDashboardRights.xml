@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE sailpoint PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<sailpoint>
+  <SPRight name="ViewIdentityLifecycleDashboard" displayName="View Identity Lifecycle Dashboard"/>
+
+  <Capability name="IdentityLifecycleDashboardViewer" displayName="Identity Lifecycle Dashboard Viewer">
+    <RightRefs>
+      <Reference class="sailpoint.object.SPRight" name="ViewIdentityLifecycleDashboard"/>
+    </RightRefs>
+  </Capability>
+</sailpoint>

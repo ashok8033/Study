@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Builds IdentityLifecycleDashboard.zip for upload in IdentityIQ (Gear > Plugins > New).
+
+  Usage:
+    ant -Diiq.home=/path/to/identityiq
+  where iiq.home is the exploded identityiq webapp (contains WEB-INF/lib).
+-->
+<project name="IdentityLifecycleDashboard" default="dist" basedir=".">
+
+  <property name="plugin.name" value="IdentityLifecycleDashboard"/>
+  <property name="plugin.version" value="1.0.0"/>
+  <property name="iiq.home" value="${basedir}/../identityiq"/>
+
+  <property name="build.dir" value="build"/>
+  <property name="classes.dir" value="${build.dir}/classes"/>
+  <property name="stage.dir" value="${build.dir}/stage"/>
+  <property name="dist.dir" value="dist"/>
+
+  <path id="compile.classpath">
+    <fileset dir="${iiq.home}/WEB-INF/lib" includes="*.jar"/>
+  </path>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+    <delete dir="${dist.dir}"/>
+  </target>
+
+  <target name="compile">
+    <mkdir dir="${classes.dir}"/>
+    <javac srcdir="src" destdir="${classes.dir}" includeantruntime="false"
+           source="1.8" target="1.8" debug="true" encoding="UTF-8">
+      <classpath refid="compile.classpath"/>
+    </javac>
+  </target>
+
+  <target name="jar" depends="compile">
+    <mkdir dir="${stage.dir}/lib"/>
+    <jar destfile="${stage.dir}/lib/${plugin.name}.jar" basedir="${classes.dir}"/>
+  </target>
+
+  <target name="dist" depends="clean,jar">
+    <copy todir="${stage.dir}">
+      <fileset dir="." includes="manifest.xml"/>
+      <fileset dir="." includes="ui/**,import/**"/>
+    </copy>
+    <mkdir dir="${dist.dir}"/>
+    <zip destfile="${dist.dir}/${plugin.name}-${plugin.version}.zip" basedir="${stage.dir}"/>
+    <echo message="Plugin built: ${dist.dir}/${plugin.name}-${plugin.version}.zip"/>
+  </target>
+</project>

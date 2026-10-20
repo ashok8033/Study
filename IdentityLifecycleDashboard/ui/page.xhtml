@@ -1,0 +1,90 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:ui="http://java.sun.com/jsf/facelets"
+      xmlns:h="http://java.sun.com/jsf/html">
+<body>
+<ui:composition>
+  <link rel="stylesheet" type="text/css"
+        href="#{plugins.requestContextPath}/plugin/IdentityLifecycleDashboard/ui/css/lifecycle.css"/>
+
+  <div id="ild-app" class="ild">
+    <div class="ild-header">
+      <div>
+        <h1>Identity Lifecycle Dashboard</h1>
+        <div id="ild-config" class="ild-sub"></div>
+      </div>
+      <div class="ild-actions">
+        <span id="ild-updated" class="ild-sub"></span>
+        <label class="ild-auto"><input type="checkbox" id="ild-autorefresh" checked="checked"/> Live (30s)</label>
+        <button type="button" id="ild-refresh" class="ild-btn">Refresh now</button>
+      </div>
+    </div>
+
+    <div id="ild-error" class="ild-error" style="display:none"></div>
+
+    <div id="ild-kpis" class="ild-kpis"></div>
+
+    <div class="ild-card">
+      <div class="ild-card-title">Account compliance <span class="ild-sub">accounts whose status matches their identity</span></div>
+      <div id="ild-compliance"></div>
+    </div>
+
+    <div class="ild-grid">
+      <div class="ild-card">
+        <div class="ild-card-title">By lifecycle status</div>
+        <table class="ild-table">
+          <thead>
+            <tr>
+              <th>Status</th><th title="Expected account state for this lifecycle status">Expected</th><th class="num">Identities</th><th class="num">Accounts</th>
+              <th class="num">Enabled</th><th class="num">Disabled</th><th class="num">Mismatches</th><th>Sync</th>
+            </tr>
+          </thead>
+          <tbody id="ild-lifecycle"><tr><td colspan="8" class="ild-empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="ild-card">
+        <div class="ild-card-title">By application <span class="ild-sub">click a row to list its mismatches</span></div>
+        <table class="ild-table">
+          <thead>
+            <tr>
+              <th>Application</th><th class="num">Accounts</th><th class="num">Enabled</th><th class="num">Disabled</th>
+              <th class="num">Locked</th><th class="num">Mismatches</th><th>Sync</th>
+            </tr>
+          </thead>
+          <tbody id="ild-apps"><tr><td colspan="7" class="ild-empty">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="ild-card">
+      <div class="ild-card-title">Mismatched accounts</div>
+      <div class="ild-filters">
+        <select id="ild-f-issue">
+          <option value="">All issues</option>
+          <option value="InactiveIdentityEnabledAccount">Inactive identity, enabled account</option>
+          <option value="ActiveIdentityDisabledAccount">Active identity, disabled account</option>
+        </select>
+        <select id="ild-f-app"><option value="">All applications</option></select>
+        <input type="text" id="ild-f-search" placeholder="Search identity or account..."/>
+        <button type="button" id="ild-export" class="ild-btn ild-btn-light">Export CSV</button>
+        <span id="ild-mm-count" class="ild-sub"></span>
+      </div>
+      <table class="ild-table">
+        <thead>
+          <tr>
+            <th>Issue</th><th>Identity</th><th>Identity status</th><th>Application</th>
+            <th>Account</th><th>Account status</th>
+          </tr>
+        </thead>
+        <tbody id="ild-mismatches"><tr><td colspan="6" class="ild-empty">Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script type="text/javascript"
+          src="#{plugins.requestContextPath}/plugin/IdentityLifecycleDashboard/ui/js/lifecycle.js"></script>
+</ui:composition>
+</body>
+</html>
