@@ -3,12 +3,12 @@
 <Plugin certificationLevel="None"
         displayName="Task Status Dashboard"
         minSystemVersion="8.0"
-        minUpgradableVersion="1.0.0"
         name="TaskStatusDashboard"
         rightRequired="ViewTaskStatusDashboard"
-        version="1.0.4">
+        version="1.0.3">
   <Attributes>
     <Map>
+      <entry key="minUpgradableVersion" value="1.0.0"/>
       <entry key="settings">
         <value>
           <List>

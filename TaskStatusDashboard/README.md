@@ -119,8 +119,7 @@ On install the plugin imports `import/install/*.xml`, creating:
 
 On upgrade IdentityIQ imports `import/upgrade/*.xml` instead of `import/install/*.xml`. Any object
 added after 1.0.0 must be placed in both folders so fresh installs and upgrades both get it.
-`minUpgradableVersion` (an attribute on the `<Plugin>` element in `manifest.xml`) is the oldest
-installed version that can upgrade in place (1.0.0).
+`minUpgradableVersion` in `manifest.xml` is the oldest version that can upgrade in place (1.0.0).
 
 ## Using the dashboard
 
@@ -311,7 +310,6 @@ The IdentityIQ UI only shows a generic message. The details are in:
 | `ant` fails with `cannot find symbol … sailpoint` | `iiq.home` does not point at the folder containing `WEB-INF/lib`. |
 | Install fails: `Attribute "…" must be declared for element type "…"` | An XML file in `import/` uses an attribute IdentityIQ's DTD does not allow (e.g. `description` on `SPRight`). Remove it, rebuild. Check the zip contains the fixed file. |
 | Install fails right after a fix | The uploaded zip is an old build. Rebuild from the latest `main` and upload the zip from `dist/`. |
-| Upload fails: *The installed plugin does not meet the minimum upgradable version requirements* | The zip's version is not higher than the installed one (compare Gear → Plugins with the zip name) – raise the version in `manifest.xml` and `build.xml` and rebuild. Or the new zip doesn't declare which versions it can upgrade from, or the installed version is older than that. `minUpgradableVersion` must be an attribute on the `<Plugin>` element in `manifest.xml` (fixed in this version). If the installed copy is older than `minUpgradableVersion`, uninstall it first (Gear → Plugins → ⋮ → Uninstall), then install the new zip and re-enter its settings. |
 | No Plugins entry under the gear icon | Set `plugins.enabled=true` in `iiq.properties` and restart Tomcat. |
 | Page loads but shows "Failed to load task status (HTTP 403)" | User lacks the `ViewTaskStatusDashboard` right – assign the viewer capability. |
 | Quick link not visible (open issue on 8.5) | Log out and back in. Check the `Custom` category exists (compare with a visible quick link's `category` on the debug page) and that the user is in the **Task Status Dashboard Viewers** population (Gear → Global Settings → Quicklink Populations). To test, point the quick link's `DynamicScopeRef` at `Everyone`. |
@@ -324,7 +322,6 @@ The IdentityIQ UI only shows a generic message. The details are in:
 
 | Version | Changes |
 |---------|---------|
-| 1.0.4 | `minUpgradableVersion` moved to the `<Plugin>` element so upgrades are accepted; version raised so it installs over 1.0.3. |
 | 1.0.3 | Email report laid out without tables so it renders correctly in mail clients. |
 | 1.0.2 | **Email Report** button and `reportRecipients` setting. |
 | 1.0.1 | **Scheduled Task Status** quick link and its population. |
