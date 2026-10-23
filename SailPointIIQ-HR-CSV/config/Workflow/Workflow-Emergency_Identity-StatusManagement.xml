@@ -346,7 +346,7 @@
 
   <Step action="rule:Emergency Identity - Provision Accounts" icon="Provision" name="Provision Accounts"
         resultVariable="provisioningResult">
-    <Arg name="identityName" value="ref:identityName"/>
+    <Arg name="identityName" value="ref:resultIdentity"/>
     <Arg name="action" value="ref:requestedAction"/>
     <Arg name="launcher" value="ref:launcher"/>
     <Transition to="Collect Result"/>
@@ -406,9 +406,15 @@
   </Step>
 
   <Step icon="Approval" name="Show Result">
-    <Approval mode="serial" name="Emergency Identity Disable / Enable - Result" owner="ref:launcher" send="">
+    <!-- The form is a work item: it only sees what is sent / passed as Args, not the workflow variables -->
+    <Approval mode="serial" name="Emergency Identity Disable / Enable - Result" owner="ref:launcher"
+              send="identityName,requestedAction,workflowResult,resultText">
       <Arg name="workItemType" value="Form"/>
       <Arg name="workItemDescription" value="Emergency Identity Disable / Enable - Result"/>
+      <Arg name="resultIdentity" value="ref:identityName"/>
+      <Arg name="resultAction" value="ref:requestedAction"/>
+      <Arg name="resultStatus" value="ref:workflowResult"/>
+      <Arg name="resultDetailsText" value="ref:resultText"/>
       <Form name="Emergency Identity Disable / Enable - Result">
         <Attributes>
           <Map>
@@ -417,10 +423,10 @@
         </Attributes>
         <Button action="next" label="OK"/>
         <Section name="resultSection">
-          <Field displayName="Identity" name="resultIdentity" readOnly="true" type="string" value="ref:identityName"/>
-          <Field displayName="Action" name="resultAction" readOnly="true" type="string" value="ref:requestedAction"/>
-          <Field displayName="Result" name="resultStatus" readOnly="true" type="string" value="ref:workflowResult"/>
-          <Field displayName="Details" displayType="textarea" name="resultDetailsText" readOnly="true" type="string" value="ref:resultText"/>
+          <Field displayName="Identity" name="resultIdentity" readOnly="true" type="string" value="ref:resultIdentity"/>
+          <Field displayName="Action" name="resultAction" readOnly="true" type="string" value="ref:resultAction"/>
+          <Field displayName="Result" name="resultStatus" readOnly="true" type="string" value="ref:resultStatus"/>
+          <Field displayName="Details" displayType="textarea" name="resultDetailsText" readOnly="true" type="string" value="ref:resultDetailsText"/>
         </Section>
       </Form>
     </Approval>
