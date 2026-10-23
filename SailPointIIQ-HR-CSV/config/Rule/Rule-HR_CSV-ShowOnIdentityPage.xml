@@ -19,7 +19,8 @@
 
   String KEY = "identityViewAttributes";
   String[] ADD = { "displayName", "status", "startDate", "endDate", "employeeNumber",
-                   "jobDescription", "employeeType", "country", "isManager" };
+                   "jobDescription", "employeeType", "country", "isManager",
+                   "emergencyDisable" };
 
   UIConfig ui = context.getObjectByName(UIConfig.class, "UIConfig");
   if (ui == null) {

@@ -9,8 +9,8 @@ from reportlab.graphics.shapes import Drawing, Line, Polygon, Rect, String
 from reportlab.platypus import (KeepTogether, PageBreak, Paragraph, SimpleDocTemplate,
                                 Spacer, Table, TableStyle, Preformatted)
 
-VERSION = "1.0"
-DATE = "13-10-2026"
+VERSION = "1.1"
+DATE = "23-10-2026"
 AUTHOR = "Ashok Kumar"
 
 NAVY = colors.HexColor("#1F3A5F")
@@ -63,7 +63,7 @@ def code(text):
 def cover(title, subtitle):
     meta = table([["Document", title], ["Project", "SailPoint IdentityIQ - HR CSV authoritative source, lifecycle and LDAP ApacheDS provisioning"],
                   ["Version", VERSION], ["Date", DATE], ["Author", AUTHOR],
-                  ["Source", "github.com/ashok8033/Study - branch claude/determined-gates-e23l4w, folder SailPointIIQ-HR-CSV"]],
+                  ["Source", "github.com/ashok8033/Study - branch main, folder SailPointIIQ-HR-CSV"]],
                  [35, 125], header=False)
     return [Spacer(1, 55 * mm), p(title, TITLE), Spacer(1, 4 * mm), p(subtitle, SUB),
             Spacer(1, 25 * mm), meta, PageBreak()]
@@ -171,6 +171,8 @@ def build_hld(path):
                     "Joiner, mover, leaver and rehire handling with email notification.",
                     "LDAP ApacheDS accounts and groups: creation, group membership by birthright and requestable roles, "
                     "display-name synchronisation, account status read-back and disable / enable.",
+                    "Emergency Identity Disable / Enable: an administrator-only quick link that disables or re-enables "
+                    "an identity and its accounts at once, without approval, fully audited.",
                     "Operational tooling: diagnostics, single-account aggregation, catch-up rules."]),
           p("<b>Out of scope</b>"),
           *bullets(["Production hardening (SSL/LDAPS, HA, secrets vault), password management and self-service.",
@@ -203,7 +205,8 @@ def build_hld(path):
                  ["Display Name", "Calculated: firstName + ' ' + lastName (global rule)"],
                  ["Status", "Calculated from startDate / endDate (global rule)"],
                  ["Start / End Date, Job Description, Country, Employee Type, Is Manager, Employee Number", "HR columns of the same name"],
-                 ["Inactive", "HR status is not Active"],
+                 ["Inactive (LCM disabled status)", "Calculated: true while Emergency Disable is set, otherwise HR status is not Active (global rule)"],
+                 ["Emergency Disable", "Set only by the Emergency Identity Status Management Workflow (true / false)"],
                  ["Email", "LDAP ApacheDS mail (generated when the LDAP account is created)"]],
                 [70, 100]),
 
@@ -215,7 +218,9 @@ def build_hld(path):
                  ["Mover", "employeeType / isManager / name changes", "Roles re-evaluated (groups added or removed); Display Name pushed to LDAP"],
                  ["Leaver", "Status becomes Terminated", "Roles removed (groups removed); LDAP account disabled; HR account shown disabled; email"],
                  ["Rehire", "Terminated -> Active", "LDAP account re-enabled; birthright roles assigned again; email"],
-                 ["Access request", "Office365 Access requested", "User added to LDAP group cn=Office365Access"]],
+                 ["Access request", "Office365 Access requested", "User added to LDAP group cn=Office365Access"],
+                 ["Emergency disable", "Administrator, quick link", "Emergency Disable = true; identity inactive; LDAP account disabled; audited"],
+                 ["Emergency enable", "Administrator, quick link", "Emergency Disable = false; inactive from HR; LDAP account enabled unless Terminated; audited"]],
                 [24, 46, 100]),
 
           p("6. Access model (roles)", H1),
@@ -231,33 +236,60 @@ def build_hld(path):
                  ["1", "HR account aggregation", "HR CSV -> IIQ", "After each HR file drop"],
                  ["2", "Daily identity refresh (attributes, events, roles, provisioning, attribute sync)", "IIQ -> ApacheDS", "Daily, just after midnight"],
                  ["3", "LDAP account aggregation (accounts, groups, status)", "ApacheDS -> IIQ", "After refresh / daily"],
-                 ["4", "Lifecycle workflow (disable / enable, email)", "IIQ -> ApacheDS, SMTP", "On Status change (during refresh)"]],
+                 ["4", "Lifecycle workflow (disable / enable, email)", "IIQ -> ApacheDS, SMTP", "On Status change (during refresh)"],
+                 ["5", "Emergency Identity Status Management Workflow (disable / enable accounts)", "IIQ -> ApacheDS (and other ENABLE-capable apps)", "On demand, from the quick link"]],
                 [8, 82, 40, 40]),
 
-          p("8. Key design decisions", H1),
+          p("8. Emergency identity disable / enable", H1),
+          p("Administrators can cut off a person immediately - for example after a security incident - and restore "
+            "access later, independently of the HR dates. The quick link <b>Emergency Identity Disable / Enable</b> "
+            "starts the approval-free <b>Emergency Identity Status Management Workflow</b>."),
+          table([["Aspect", "Design"],
+                 ["Who", "Only identities with the SystemAdministrator or EmergencyIdentityAdministrator capability see the "
+                         "quick link (DynamicScope); the workflow checks the capability again before changing anything"],
+                 ["Form", "Identity selector; shows name, status (Active / Disabled), Emergency Disable value and HR status. "
+                          "Only the valid action is offered: Disable for an active identity, Enable for a disabled one. "
+                          "Justification required; requestors cannot target themselves"],
+                 ["Identity", "Emergency Disable set to true / false; Inactive (LCM disabled status) recalculated at once and "
+                              "kept in step on every refresh by a global rule"],
+                 ["Accounts", "Disabled / enabled without approval: LDAP ApacheDS by the admin lock, other applications whose "
+                              "connector supports ENABLE through the IIQ provisioner; HR (authoritative) is never changed. "
+                              "Enable never re-enables accounts of an HR-Terminated identity"],
+                 ["Audit", "One AuditEvent per request (also refused ones): requestor, target, action, date and time, "
+                           "workflow result, justification, per-account outcome; plus a server log line"]],
+                [25, 145]),
+          p("The HR lifecycle respects the flag: a refresh never re-activates an emergency-disabled identity, and a "
+            "rehire does not re-enable its LDAP account while Emergency Disable is set."),
+
+          p("9. Key design decisions", H1),
           table([["Decision", "Reason"],
                  ["Identity name = employeeNumber; correlation on name", "Name is always searchable; no extended searchable attribute or schema change needed"],
                  ["Status calculated on refresh, not only on aggregation", "People change state on the right day even when the HR file has not changed"],
                  ["LDAP group membership handled by provisioning rules (JNDI)", "The LDAP connector sent 'groups' as an attribute; ApacheDS rejected it"],
                  ["Disable by ApacheDS admin lock pwdAccountLockedTime = 000001010000Z", "ApacheDS has no enabled flag; the password policy lock is the standard mechanism"],
                  ["Two-level roles (business -> IT)", "Business roles cannot hold entitlements; IT roles carry the LDAP group"],
-                 ["Setup rules instead of importing ObjectConfig / UIConfig", "Importing those objects would overwrite the whole configuration"]],
+                 ["Setup rules instead of importing ObjectConfig / UIConfig", "Importing those objects would overwrite the whole configuration"],
+                 ["Inactive calculated by a global rule instead of mapped from HR", "Keeps the LCM disabled status in step with Emergency Disable on every refresh"],
+                 ["Emergency workflow re-validates admin rights and current state", "The quick link scope only hides the link; the workflow is the security boundary"],
+                 ["Emergency LDAP disable reuses LDAP ApacheDS - Set Account Status", "One proven disable / enable path for leavers and emergencies"]],
                 [70, 100]),
 
-          p("9. Non-functional considerations", H1),
+          p("10. Non-functional considerations", H1),
           *bullets(["<b>Security:</b> bind password stored encrypted in IIQ (re-enter it in the UI after import). Lab "
                     "uses plain LDAP on 10389 and an initial password pattern Welcome@&lt;employeeNumber&gt; - both must change for production.",
                     "<b>Logging:</b> log4j2 file appender (C:/SailPoint/logs); rules log with the prefix 'LDAP ApacheDS:' / 'HR CSV'.",
                     "<b>Performance:</b> sized for a lab (16 users). Tomcat heap 1-4 GB; LDAP rules reuse one connection per aggregation.",
                     "<b>Resilience:</b> catch-up rules (Disable Terminated Users, Aggregate Single Account) recover from missed events."]),
 
-          p("10. Assumptions, risks and open items", H1),
+          p("11. Assumptions, risks and open items", H1),
           table([["Item", "Type", "Notes"],
                  ["ApacheDS password policy must be enabled", "Assumption", "Needed for pwdAccountLockedTime to be accepted and to block logins"],
                  ["LDAP disable / status read-back not yet confirmed in the lab", "Open item", "Last test: attribute not visible; Studio hides operational attributes by default"],
                  ["Group membership via After Provisioning rule", "Risk", "Verify uniqueMember changes after first provisioning run"],
                  ["Mail delivery depends on Gmail app password", "Assumption", "Use the Send Test Email rule to verify"],
-                 ["Lifecycle Events page requires Lifecycle Manager", "Assumption", "Event works without it; view via Debug > IdentityTrigger"]],
+                 ["Lifecycle Events page requires Lifecycle Manager", "Assumption", "Event works without it; view via Debug > IdentityTrigger"],
+                 ["Emergency form fields read the selected identity with form.getField()", "Open item", "Confirm on the first test that the read-only fields fill in after selection"],
+                 ["Applications without the ENABLE feature", "Risk", "Reported as MANUAL by the emergency workflow; disable them on the target system"]],
                 [65, 25, 80])]
 
     doc = SimpleDocTemplate(path, pagesize=A4, leftMargin=18 * mm, rightMargin=18 * mm,
@@ -302,7 +334,9 @@ def build_lld(path):
             "They are shown on View Identity by <b>HR CSV - Show Attributes On Identity Page</b> (UIConfig identityViewAttributes)."),
           table([["Identity attribute", "Source", "Target"],
                  ["employeeNumber, startDate, endDate, jobDescription, country, employeeType, isManager", "HR CSV attribute of the same name", "-"],
-                 ["firstname / lastname / manager / inactive", "HR firstName / lastName / managerId / inactive", "-"],
+                 ["firstname / lastname / manager", "HR firstName / lastName / managerId", "-"],
+                 ["inactive", "Global rule Emergency Identity - Inactive Attribute (true if emergencyDisable, else HR inactive)", "-"],
+                 ["emergencyDisable", "No source; editable (Permanent); set by the emergency workflow", "-"],
                  ["displayName", "Global rule HR CSV - Display Name", "LDAP ApacheDS: displayName"],
                  ["status", "Global rule HR Lifecycle - Status Attribute", "-"],
                  ["email", "LDAP ApacheDS: mail (generated by the Create Account policy)", "-"]],
@@ -331,7 +365,11 @@ def build_lld(path):
                  ["HR CSV - Show Attributes On Identity Page", "Setup", "Add attributes to UIConfig identityViewAttributes"],
                  ["HR CSV - Diagnose", "Utility (read-only)", "Mappings (DB / cache), HR link, identity values, status rule result"],
                  ["Aggregate Single Account", "Utility", "Targeted aggregation of one account for any application"],
-                 ["HR Lifecycle - Send Test Email", "Utility", "Show mail settings and send one test email"]],
+                 ["HR Lifecycle - Send Test Email", "Utility", "Show mail settings and send one test email"],
+                 ["Emergency Identity - Inactive Attribute", "IdentityAttribute (global)", "inactive = emergencyDisable OR HR inactive"],
+                 ["Emergency Identity - Provision Accounts", "Called rule", "Disable / enable every non-authoritative account; returns status + per-account details"],
+                 ["Emergency Identity - Audit", "Called rule", "Write the AuditEvent and the log line"],
+                 ["Emergency Identity - Setup", "Setup", "Create emergencyDisable, switch inactive to the global rule, add audit actions"]],
                 [55, 38, 77]),
 
           p("5. LDAP ApacheDS application", H1),
@@ -393,10 +431,49 @@ def build_lld(path):
                "Disable LDAP    : newStatus = Terminated and oldStatus != Terminated\n"
                "                  -> rule LDAP ApacheDS - Set Account Status (action Disable)\n"
                "Enable LDAP     : oldStatus = Terminated and newStatus = Active\n"
+               "                  and emergencyDisable is not true\n"
                "                  -> rule LDAP ApacheDS - Set Account Status (action Enable)\n"
                "Check Notify    : email only when oldStatus and newStatus are set and differ"),
 
-          p("9. Tasks", H1),
+          p("9. Emergency Identity Disable / Enable", H1),
+          table([["Object", "Configuration"],
+                 ["SPRight / Capability", "EmergencyIdentityDisableEnable / EmergencyIdentityAdministrator"],
+                 ["DynamicScope 'Emergency Identity Administrators'", "capabilities.name = SystemAdministrator OR EmergencyIdentityAdministrator"],
+                 ["QuickLink 'Emergency Identity Disable / Enable'", "action workflow, category Custom, workflowName = Emergency Identity Status Management Workflow"],
+                 ["Workflow 'Emergency Identity Status Management Workflow'", "transient; no approvals; form owner = launcher"],
+                 ["File", "config/QuickLink/QuickLink-Emergency_Identity-DisableEnable.xml, "
+                          "config/Workflow/Workflow-Emergency_Identity-StatusManagement.xml"]],
+                [65, 105]),
+          code("Request Form      : targetIdentity (Identity, postBack), read-only Identity Name, Current Status,\n"
+               "                    Emergency Disable, HR Status; requestedAction (only the valid value);\n"
+               "                    justification (required). Cancel -> Stop\n"
+               "Validate Request  : launcher has SystemAdministrator / EmergencyIdentityAdministrator; target exists,\n"
+               "                    is not the launcher; action matches emergencyDisable -> else DENIED -> Audit\n"
+               "Update Identity   : ObjectUtil.lockIdentity; emergencyDisable = (action == Disable);\n"
+               "                    inactive = rule Emergency Identity - Inactive Attribute; unlock (commits)\n"
+               "Provision Accounts: rule Emergency Identity - Provision Accounts -> provisioningResult\n"
+               "Collect Result    : workflowResult = SUCCESS | PARTIAL | FAILED | NOTHING_TO_DO\n"
+               "Audit             : rule Emergency Identity - Audit\n"
+               "Show Result       : read-only form for the requestor -> Stop"),
+          p("<b>Account handling</b> (Emergency Identity - Provision Accounts)"),
+          table([["Account", "Disable", "Enable"],
+                 ["Authoritative (HR Authoritative CSV)", "skipped", "skipped"],
+                 ["Already in the requested state", "skipped", "skipped"],
+                 ["Any account, HR status Terminated", "processed", "skipped (stays disabled)"],
+                 ["LDAP ApacheDS", "rule LDAP ApacheDS - Set Account Status (Disable)", "same rule (Enable)"],
+                 ["Connector supports ENABLE", "AccountRequest Disable via Provisioner", "AccountRequest Enable via Provisioner"],
+                 ["Other", "MANUAL (counted as failed)", "MANUAL (counted as failed)"]],
+                [60, 55, 55]),
+          p("<b>Audit event</b>"),
+          table([["Field", "Value"],
+                 ["action", "EmergencyIdentityDisable / EmergencyIdentityEnable / EmergencyIdentityDenied"],
+                 ["source / target / created", "requestor / target identity / date and time"],
+                 ["string1", "workflow result: SUCCESS, PARTIAL, FAILED, NOTHING_TO_DO, DENIED"],
+                 ["string2 / string3 / string4", "justification / emergencyDisable before -> after / account summary"],
+                 ["attributes", "requestedAction, accounts (full list), workflowCaseId"]],
+                [50, 120]),
+
+          p("10. Tasks", H1),
           table([["Task", "Type", "Key options"],
                  ["HR Authoritative CSV - Account Aggregation", "AccountAggregation", "applications = HR Authoritative CSV, checkDeleted, noOptimizeReaggregation"],
                  ["HR Lifecycle - Daily Identity Refresh", "Identity refresh", "promoteAttributes, processTriggers, correlateEntitlements, provision, synchronizeAttributes, refreshManagerStatus"],
@@ -404,7 +481,7 @@ def build_lld(path):
                 [60, 32, 78]),
           p("<b>Recommended schedule:</b> HR aggregation -> Daily Identity Refresh (00:05) -> LDAP aggregation."),
 
-          p("10. Deployment runbook", H1),
+          p("11. Deployment runbook", H1),
           table([["Step", "Action"],
                  ["1", "ApacheDS: create the dc=example,dc=com partition; import both LDIF files; enable Password Policy"],
                  ["2", "Copy data/HR_Employees.csv to C:/SailPoint/hrfeed/"],
@@ -414,10 +491,12 @@ def build_lld(path):
                  ["6", "Global Settings > Mail Settings: smtp.gmail.com, 587, TLS, app password; rule \"HR Lifecycle - Send Test Email\""],
                  ["7", "Run HR aggregation, Daily Identity Refresh, LDAP aggregation"],
                  ["8", "rule \"LDAP ApacheDS - Disable Terminated Users\" once for existing leavers"],
-                 ["9", "Schedule the three tasks"]],
+                 ["9", "Schedule the three tasks"],
+                 ["10", "rule \"Emergency Identity - Setup\" (after step 5); give non-admin operators the Emergency Identity Administrator capability"],
+                 ["11", "Run the Daily Identity Refresh once so inactive is recalculated by the new global rule"]],
                 [12, 158]),
 
-          p("11. Test cases", H1),
+          p("12. Test cases", H1),
           table([["#", "Scenario", "Steps", "Expected result"],
                  ["T1", "Initial load", "HR aggregation + refresh", "16 identities named 1000-1015; Ashok is everyone's manager"],
                  ["T2", "Status", "Diagnose rule for 1000", "status = Active; 1009/1011/1015 Terminated; 1014 PreHire"],
@@ -426,10 +505,14 @@ def build_lld(path):
                  ["T5", "Rehire", "Clear endDate; aggregate + refresh", "Status Active; LDAP lock removed; email"],
                  ["T6", "Name change", "Change lastName; aggregate + refresh", "Identity last / display name updated; LDAP displayName updated"],
                  ["T7", "Request", "Request Office365 Access; approve", "User in cn=Office365Access"],
-                 ["T8", "Status read-back", "Lock an entry in Studio; LDAP aggregation", "accountStatus Disabled / Locked in IIQ"]],
+                 ["T8", "Status read-back", "Lock an entry in Studio; LDAP aggregation", "accountStatus Disabled / Locked in IIQ"],
+                 ["T9", "Emergency access", "Log in as a user without the capabilities", "Quick link not shown"],
+                 ["T10", "Emergency disable", "spadmin: quick link, active user, Disable", "Only Disable offered; emergencyDisable = true; inactive; LDAP locked; SUCCESS; audit EmergencyIdentityDisable"],
+                 ["T11", "Emergency enable", "Same user again, Enable", "Only Enable offered; emergencyDisable = false; LDAP unlocked; audit EmergencyIdentityEnable"],
+                 ["T12", "Refresh keeps state", "Emergency-disable a user; run Daily Identity Refresh", "Identity stays inactive; LDAP stays locked"]],
                 [9, 22, 54, 85]),
 
-          p("12. Troubleshooting", H1),
+          p("13. Troubleshooting", H1),
           table([["Symptom", "Cause / fix"],
                  ["Import: 'must match DOCTYPE root null'", "File has no DOCTYPE - every file in the package now has one"],
                  ["Unable to open filestream", "File path wrong or under OneDrive; use C:/SailPoint/hrfeed and check with Test-Path"],
@@ -439,6 +522,9 @@ def build_lld(path):
                  ["Account not updated after HR change", "IIQ reads a different file; check File Path, schema Preview, Aggregate Single Account output"],
                  ["pwdAccountLockedTime not visible in Studio", "Enable 'Fetch operational attributes' in the connection's Browser Options"],
                  ["No email", "Mail settings / Gmail app password; run HR Lifecycle - Send Test Email"],
+                 ["Emergency quick link not shown", "User lacks SystemAdministrator / EmergencyIdentityAdministrator; log out and in after granting"],
+                 ["Emergency result PARTIAL / MANUAL", "An application has no ENABLE feature or provisioning failed; see the result lines and the audit event"],
+                 ["Refresh re-activates an emergency-disabled identity", "inactive still mapped from HR; run rule \"Emergency Identity - Setup\""],
                  ["Java heap space", "setenv.bat CATALINA_OPTS -Xms1024m -Xmx4096m, or tomcat9w.exe Java tab for the service"]],
                 [60, 110])]
 

@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="Emergency Identity - Audit">
+  <Description>
+    Writes one AuditEvent for every Emergency Identity Disable / Enable request,
+    including refused ones, and logs the same line to the server log.
+
+      Action  : EmergencyIdentityDisable, EmergencyIdentityEnable or EmergencyIdentityDenied
+      Source  : requestor (launcher)
+      Target  : target identity
+      Created : date and time
+      string1 : workflow execution result (SUCCESS, PARTIAL, FAILED, NOTHING_TO_DO, DENIED)
+      string2 : justification entered on the form
+      string3 : Emergency Disable value before -> after
+      string4 : per-account summary (shortened); full list in attribute "accounts"
+
+    Find the events in Advanced Analytics > Audit Search (action, source or target),
+    or with the console:  list AuditEvent  /  get AuditEvent &lt;id&gt;
+  </Description>
+  <Signature returnType="String">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="launcher" type="String"/>
+      <Argument name="identityName" type="String"/>
+      <Argument name="requestedAction" type="String"/>
+      <Argument name="workflowResult" type="String"/>
+      <Argument name="justification" type="String"/>
+      <Argument name="previousValue"/>
+      <Argument name="newValue"/>
+      <Argument name="details" type="List"/>
+      <Argument name="workflowCaseId" type="String"/>
+    </Inputs>
+    <Returns>
+      <Argument name="auditId" type="String"/>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+  import java.util.List;
+  import sailpoint.object.AuditEvent;
+
+  String trim(String s, int max) {
+      if (s == null) return null;
+      return s.length() <= max ? s : s.substring(0, max - 3) + "...";
+  }
+
+  String auditAction;
+  if ("DENIED".equals(workflowResult)) auditAction = "EmergencyIdentityDenied";
+  else if ("Enable".equalsIgnoreCase(requestedAction)) auditAction = "EmergencyIdentityEnable";
+  else auditAction = "EmergencyIdentityDisable";
+
+  String detailText = (details == null) ? "" : details.toString();
+
+  AuditEvent ev = new AuditEvent();
+  ev.setAction(auditAction);
+  ev.setSource(launcher);
+  ev.setTarget(identityName);
+  ev.setApplication("IdentityIQ");
+  ev.setString1(workflowResult);
+  ev.setString2(trim(justification, 450));
+  ev.setString3(String.valueOf(previousValue) + " -> " + String.valueOf(newValue));
+  ev.setString4(trim(detailText, 450));
+  ev.setAttribute("requestedAction", requestedAction);
+  ev.setAttribute("accounts", details);
+  ev.setAttribute("workflowCaseId", workflowCaseId);
+  context.saveObject(ev);
+  context.commitTransaction();
+
+  log.warn("Emergency Identity: " + auditAction + " requestor=" + launcher + " target=" + identityName
+           + " action=" + requestedAction + " result=" + workflowResult
+           + " emergencyDisable=" + previousValue + "->" + newValue + " accounts=" + detailText);
+  return ev.getId();
+  ]]></Source>
+</Rule>

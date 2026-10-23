@@ -31,6 +31,13 @@
   <ImportAction name="include" value="Workflow/Workflow-HR_Lifecycle-StatusChange.xml"/>
   <ImportAction name="include" value="IdentityTrigger/IdentityTrigger-HR_Lifecycle-StatusChange.xml"/>
   <ImportAction name="include" value="TaskDefinition/TaskDefinition-HR_Lifecycle-DailyRefresh.xml"/>
+  <!-- Emergency Identity Disable / Enable quick link (run once afterwards: rule "Emergency Identity - Setup") -->
+  <ImportAction name="include" value="Rule/Rule-Emergency_Identity-InactiveAttribute.xml"/>
+  <ImportAction name="include" value="Rule/Rule-Emergency_Identity-ProvisionAccounts.xml"/>
+  <ImportAction name="include" value="Rule/Rule-Emergency_Identity-Audit.xml"/>
+  <ImportAction name="include" value="Rule/Rule-Emergency_Identity-Setup.xml"/>
+  <ImportAction name="include" value="Workflow/Workflow-Emergency_Identity-StatusManagement.xml"/>
+  <ImportAction name="include" value="QuickLink/QuickLink-Emergency_Identity-DisableEnable.xml"/>
   <!-- Imported here, but must be RUN once afterwards: rule "HR CSV - Setup Identity Mappings" -->
   <ImportAction name="include" value="Rule/Rule-HR_CSV-SetupIdentityMappings.xml"/>
   <!-- Run once afterwards: rule "HR CSV - Show Attributes On Identity Page" -->

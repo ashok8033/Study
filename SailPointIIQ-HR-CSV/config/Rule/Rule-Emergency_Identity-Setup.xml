@@ -1,0 +1,115 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="Emergency Identity - Setup">
+  <Description>
+    One-time setup for the "Emergency Identity Disable / Enable" quick link.
+    Safe to run more than once.
+
+      1. Creates the identity attribute "emergencyDisable" (Emergency Disable,
+         boolean, editable, no source - only the quick link workflow sets it).
+      2. Makes "inactive" (the identity's disabled status in LCM) calculated by
+         the global rule "Emergency Identity - Inactive Attribute", replacing
+         the plain HR Authoritative CSV mapping, so it follows emergencyDisable.
+      3. Adds the audit actions EmergencyIdentityDisable, EmergencyIdentityEnable
+         and EmergencyIdentityDenied to the AuditConfig, so they can be picked
+         in Advanced Analytics > Audit Search.
+
+    Run it from the IIQ console:   rule "Emergency Identity - Setup"
+    Run "HR CSV - Setup Identity Mappings" before it.
+  </Description>
+  <Source><![CDATA[
+  import java.util.ArrayList;
+  import java.util.Iterator;
+  import java.util.List;
+  import sailpoint.object.AttributeSource;
+  import sailpoint.object.AuditConfig;
+  import sailpoint.object.ObjectAttribute;
+  import sailpoint.object.ObjectConfig;
+  import sailpoint.object.Rule;
+
+  StringBuilder report = new StringBuilder();
+
+  ObjectConfig oc = context.getObjectByName(ObjectConfig.class, "Identity");
+  if (oc == null) return "ERROR: ObjectConfig 'Identity' not found.";
+  List attrs = oc.getObjectAttributes();
+  if (attrs == null) attrs = new ArrayList();
+
+  // 1. emergencyDisable
+  ObjectAttribute ed = oc.getObjectAttribute("emergencyDisable");
+  if (ed == null) {
+      ed = new ObjectAttribute();
+      ed.setName("emergencyDisable");
+      ed.setDisplayName("Emergency Disable");
+      ed.setType("boolean");
+      attrs.add(ed);
+      report.append("Created identity attribute emergencyDisable\n");
+  } else {
+      report.append("Skipped emergencyDisable (already exists)\n");
+  }
+  // Editable and kept across refreshes: only the workflow changes it
+  ed.setEditMode(ObjectAttribute.EditMode.Permanent);
+
+  // 2. inactive <- global rule
+  Rule inactiveRule = context.getObjectByName(Rule.class, "Emergency Identity - Inactive Attribute");
+  if (inactiveRule == null) {
+      return "ERROR: rule 'Emergency Identity - Inactive Attribute' not found. Import it first.\n" + report;
+  }
+  ObjectAttribute inactive = oc.getObjectAttribute("inactive");
+  if (inactive == null) {
+      inactive = new ObjectAttribute();
+      inactive.setName("inactive");
+      inactive.setType("boolean");
+      attrs.add(inactive);
+      report.append("Created identity attribute inactive\n");
+  }
+  // The rule reads the HR value itself; a source would bypass emergencyDisable
+  List sources = inactive.getSources();
+  if (sources != null) {
+      Iterator it = sources.iterator();
+      while (it.hasNext()) {
+          AttributeSource s = (AttributeSource) it.next();
+          it.remove();
+          report.append("Removed inactive source ")
+                .append(s.getApplication() == null ? "" : s.getApplication().getName() + ":")
+                .append(s.getName()).append("\n");
+      }
+      inactive.setSources(sources);
+  }
+  inactive.setRule(inactiveRule);
+  report.append("inactive <- global rule Emergency Identity - Inactive Attribute\n");
+
+  oc.setObjectAttributes(attrs);
+  context.saveObject(oc);
+
+  // 3. Audit actions
+  String[][] ACTIONS = {
+      { "EmergencyIdentityDisable", "Emergency Identity Disable" },
+      { "EmergencyIdentityEnable",  "Emergency Identity Enable" },
+      { "EmergencyIdentityDenied",  "Emergency Identity Request Denied" }
+  };
+  AuditConfig ac = context.getObjectByName(AuditConfig.class, "AuditConfig");
+  if (ac == null) {
+      report.append("SKIPPED audit actions (AuditConfig not found); events are still written\n");
+  } else {
+      List actions = ac.getActions();
+      if (actions == null) actions = new ArrayList();
+      for (int i = 0; i < ACTIONS.length; i++) {
+          AuditConfig.AuditAction a = ac.getAuditAction(ACTIONS[i][0]);
+          if (a == null) {
+              a = new AuditConfig.AuditAction();
+              a.setName(ACTIONS[i][0]);
+              a.setDisplayName(ACTIONS[i][1]);
+              actions.add(a);
+              report.append("Added audit action ").append(ACTIONS[i][0]).append("\n");
+          }
+          a.setEnabled(true);
+      }
+      ac.setActions(actions);
+      context.saveObject(ac);
+  }
+
+  context.commitTransaction();
+  log.warn("Emergency Identity setup:\n" + report.toString());
+  return report.toString();
+  ]]></Source>
+</Rule>
