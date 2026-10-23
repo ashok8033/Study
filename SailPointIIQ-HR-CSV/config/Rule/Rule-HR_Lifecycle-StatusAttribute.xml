@@ -8,6 +8,8 @@
       PreHire    - today is before startDate
       Active     - startDate &lt;= today &lt;= endDate (or no endDate)
       Terminated - today is after endDate
+      Disabled   - Emergency Disable is true (set by the "Emergency Identity
+                   Status Management Workflow"); overrides the HR dates
 
     Dates come from the HR Authoritative CSV account (DD-MM-YYYY). Because it is
     recalculated on refresh, people move between states on the right day even
@@ -34,6 +36,12 @@
   import sailpoint.object.Link;
 
   String APP_NAME = "HR Authoritative CSV";
+
+  // Emergency Disable overrides the HR dates
+  Object emergency = identity.getAttribute("emergencyDisable");
+  if (emergency != null && "true".equalsIgnoreCase(emergency.toString().trim())) {
+      return "Disabled";
+  }
 
   Date parseDate(Object value) {
       if (value == null) return null;

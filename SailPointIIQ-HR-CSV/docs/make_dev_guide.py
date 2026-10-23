@@ -151,7 +151,7 @@ def build(path):
                '...\n'
                'if (start == null && end == null) return oldValue;   // no data: keep what we had'),
           table([["Rule", "Returns"],
-                 ["HR Lifecycle - Status Attribute", "PreHire / Active / Terminated (same day logic as section 5.1)"],
+                 ["HR Lifecycle - Status Attribute", "Disabled while emergencyDisable is true; otherwise PreHire / Active / Terminated (same day logic as section 5.1)"],
                  ["HR CSV - Display Name", "firstName + ' ' + lastName from the HR link"],
                  ["Emergency Identity - Inactive Attribute", "true while emergencyDisable is set, otherwise the HR link's inactive"]],
                 [60, 110]),
@@ -285,7 +285,7 @@ def build(path):
             "when the work item was not completed with Submit."),
           p("9.3 Update, provisioning, audit", H2),
           *bullets(["<b>Update Identity</b> takes an identity lock (ObjectUtil.lockIdentity) so it cannot clash with a "
-                    "running refresh, sets emergencyDisable, runs the inactive global rule for the new value and "
+                    "running refresh, sets emergencyDisable, runs the status and inactive global rules for the new value and "
                     "unlocks (which saves and commits).",
                     "<b>Emergency Identity - Provision Accounts</b> collects the work first and then acts, because the LDAP "
                     "rule commits. LDAP ApacheDS goes through <b>LDAP ApacheDS - Set Account Status</b>; other applications "

@@ -9,7 +9,8 @@
     2. Validate: the launcher must be an administrator (SystemAdministrator or
        EmergencyIdentityAdministrator), may not target themselves, and the
        action must still match the identity's current state.
-    3. Update the identity: emergencyDisable and inactive (LCM disabled status).
+    3. Update the identity: emergencyDisable, status (Disabled while
+       emergencyDisable is true, otherwise from the HR dates) and inactive.
     4. Provision: disable / enable the accounts, no approvals
        (rule "Emergency Identity - Provision Accounts").
     5. Audit every request, including refused ones (rule "Emergency Identity - Audit").
@@ -128,7 +129,7 @@
             </Script>
           </Field>
 
-          <Field displayName="HR Status" dynamic="true" name="currentHrStatus" readOnly="true" type="string">
+          <Field displayName="Lifecycle Status" dynamic="true" name="currentHrStatus" readOnly="true" type="string">
             <Script>
               <Source><![CDATA[
                 import sailpoint.object.Identity;
@@ -298,6 +299,16 @@
 
             id.setAttribute("emergencyDisable", Boolean.valueOf(disable));
 
+            // Lifecycle status: Disabled now, or back to the HR value on Enable
+            Rule statusRule = context.getObjectByName(Rule.class, "HR Lifecycle - Status Attribute");
+            if (statusRule != null) {
+                Map sargs = new HashMap();
+                sargs.put("identity", id);
+                sargs.put("oldValue", id.getAttribute("status"));
+                Object st = context.runRule(statusRule, sargs);
+                if (st != null) id.setAttribute("status", st.toString());
+            }
+
             // LCM disabled status: same calculation as the identity refresh
             Rule inactiveRule = context.getObjectByName(Rule.class, "Emergency Identity - Inactive Attribute");
             boolean inactive = disable;
@@ -351,6 +362,10 @@
         Map r = (Map) provisioningResult;
         List details = new ArrayList();
         details.add("Emergency Disable set to " + newValue + " on " + identityName + ".");
+        sailpoint.object.Identity updated = context.getObjectByName(sailpoint.object.Identity.class, identityName);
+        if (updated != null) {
+            details.add("Lifecycle status: " + updated.getAttribute("status") + ", inactive: " + updated.isInactive() + ".");
+        }
         if (r == null) {
             workflow.put("workflowResult", "FAILED");
             details.add("No result from the provisioning rule.");

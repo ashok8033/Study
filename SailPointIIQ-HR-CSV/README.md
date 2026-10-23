@@ -83,6 +83,7 @@ global rule `HR Lifecycle - Status Attribute`, from the HR `startDate` and `endD
 | PreHire | today is before startDate |
 | Active | from startDate up to and including endDate |
 | Terminated | the day after endDate onwards |
+| Disabled | Emergency Disable is true (overrides the dates; see *Emergency Identity Disable / Enable*) |
 
 When `status` changes (for example PreHire -> Active, or Active -> Terminated), the lifecycle event
 **HR Lifecycle - Status Change** starts the workflow **HR Lifecycle - Status Change Notification**.
@@ -294,8 +295,9 @@ How it works:
 2. **Validate.** The workflow checks again that the requestor is an administrator and that the
    action still matches the identity's current state. If a check fails, nothing is changed and the
    request is audited as `EmergencyIdentityDenied`.
-3. **Update the identity.** It sets `emergencyDisable` (`true` for Disable, `false` for Enable) and `inactive`,
-   and saves the identity under an identity lock, so the identity record shows the change at once.
+3. **Update the identity.** It sets `emergencyDisable` (`true` for Disable, `false` for Enable), `status`
+   (**Disabled** on Disable, back to PreHire / Active / Terminated from the HR dates on Enable) and `inactive`.
+   It saves the identity under an identity lock, so the identity record shows the change at once.
 4. **Provision** (rule `Emergency Identity - Provision Accounts`), with no approvals:
 
    | Account | Disable | Enable |
@@ -328,6 +330,10 @@ To find the events, use **Advanced Analytics > Audit Search** and search by acti
 
 The HR lifecycle stays consistent with this feature:
 
+- While `emergencyDisable = true`, the status rule returns **Disabled** whatever the HR start and end dates are,
+  so a refresh keeps the identity Disabled.
+- The birthright roles need `status = Active`. The first refresh after an emergency disable therefore removes them
+  and takes the person out of the LDAP groups. After Enable, the next refresh assigns them again and restores the groups.
 - A refresh never re-activates an emergency-disabled identity, because `inactive` comes from the global rule.
 - A rehire (Terminated -> Active) does not re-enable the LDAP account while `emergencyDisable = true`.
 - `HR CSV - Setup Identity Mappings` no longer adds a source to an attribute that is calculated by a
