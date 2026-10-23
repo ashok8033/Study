@@ -4,10 +4,8 @@
   Quick link "Emergency Identity Disable / Enable" and who may use it.
 
   Shown only to identities with the SystemAdministrator capability or the
-  EmergencyIdentityAdministrator capability below (directly or through a
-  workgroup), decided by the rule "Emergency Identity - Admin Selector".
-  The workflow checks the same capabilities again before it changes anything.
-  Import the rule before this file.
+  EmergencyIdentityAdministrator capability below. The workflow checks the
+  same capabilities again before it changes anything.
 -->
 <sailpoint>
   <SPRight name="EmergencyIdentityDisableEnable" displayName="Emergency Identity Disable / Enable"/>
@@ -22,9 +20,12 @@
   <DynamicScope name="Emergency Identity Administrators">
     <Selector>
       <IdentitySelector>
-        <RuleRef>
-          <Reference class="sailpoint.object.Rule" name="Emergency Identity - Admin Selector"/>
-        </RuleRef>
+        <CompoundFilter>
+          <CompositeFilter operation="OR">
+            <Filter operation="EQ" property="capabilities.name" value="SystemAdministrator"/>
+            <Filter operation="EQ" property="capabilities.name" value="EmergencyIdentityAdministrator"/>
+          </CompositeFilter>
+        </CompoundFilter>
       </IdentitySelector>
     </Selector>
   </DynamicScope>
