@@ -22,8 +22,8 @@ def build(path):
           p("<b>Read in this order</b>"),
           *bullets(["Section 2-3: what is in the repository and the IIQ concepts used.",
                     "Section 4: when IIQ runs each piece of code (the most important section).",
-                    "Sections 5-9: walk-through of every file, with the key code.",
-                    "Sections 10-12: how to extend it, coding conventions, debugging."]),
+                    "Sections 5-10: walk-through of every file, with the key code.",
+                    "Sections 11-13: how to extend it, coding conventions, debugging."]),
 
           # -------------------------------------------------------- 2
           p("2. Repository layout", H1),
@@ -35,15 +35,16 @@ def build(path):
                "  config/\n"
                "    init-HR-CSV.xml               master import file - imports everything in order\n"
                "    Application/                  HR Authoritative CSV, LDAP ApacheDS\n"
-               "    Rule/                         all BeanShell code (18 rules)\n"
+               "    Rule/                         all BeanShell code (22 rules)\n"
                "    Bundle/                       roles (business + IT)\n"
                "    ManagedAttribute/             the Office365Access entitlement\n"
-               "    Workflow/  IdentityTrigger/  EmailTemplate/   lifecycle event, workflow, email\n"
+               "    Workflow/  IdentityTrigger/  EmailTemplate/   lifecycle event, workflows, email\n"
+               "    QuickLink/                    Emergency Identity quick link, capability, scope\n"
                "    TaskDefinition/               aggregation and refresh tasks"),
           p("<b>Naming convention.</b> Every file is <font face='Courier'>&lt;ObjectType&gt;-&lt;Area&gt;-&lt;Name&gt;.xml</font> "
             "and the object inside is named <font face='Courier'>&lt;Area&gt; - &lt;Name&gt;</font>, for example "
             "<font face='Courier'>Rule-HR_CSV-Correlation.xml</font> holds the rule <b>HR CSV - Correlation</b>. "
-            "Areas: <b>HR CSV</b> (the HR source), <b>HR Lifecycle</b> (status and events), <b>LDAP ApacheDS</b> (the target)."),
+            "Areas: <b>HR CSV</b> (the HR source), <b>HR Lifecycle</b> (status and events), <b>LDAP ApacheDS</b> (the target), <b>Emergency Identity</b> (the emergency quick link)."),
           p("<b>Every file is a SailPoint XML object.</b> Each starts with <font face='Courier'>&lt;!DOCTYPE &lt;Root&gt; PUBLIC \"sailpoint.dtd\" \"sailpoint.dtd\"&gt;</font>; "
             "files holding several objects use the root <font face='Courier'>&lt;sailpoint&gt;</font>. IIQ validates "
             "the XML against its DTD on import, so element names and nesting must match exactly."),
@@ -151,7 +152,8 @@ def build(path):
                'if (start == null && end == null) return oldValue;   // no data: keep what we had'),
           table([["Rule", "Returns"],
                  ["HR Lifecycle - Status Attribute", "PreHire / Active / Terminated (same day logic as section 5.1)"],
-                 ["HR CSV - Display Name", "firstName + ' ' + lastName from the HR link"]],
+                 ["HR CSV - Display Name", "firstName + ' ' + lastName from the HR link"],
+                 ["Emergency Identity - Inactive Attribute", "true while emergencyDisable is set, otherwise the HR link's inactive"]],
                 [60, 110]),
           p("6.2 HR CSV - Setup Identity Mappings (one-time setup rule)", H2),
           p("Creates the identity attributes in ObjectConfig <b>Identity</b> through the API instead of importing XML, "
@@ -165,6 +167,8 @@ def build(path):
                'statusAttr.setRule(statusRule);                             // global rule\n'
                'AttributeTarget t = new AttributeTarget(); t.setApplication(ldapApp); t.setName("displayName");\n'
                'context.saveObject(oc); context.commitTransaction();'),
+          p("An attribute that already has a global rule (for example <b>inactive</b> after "
+            "<b>Emergency Identity - Setup</b>) is skipped: adding a source to it would bypass the rule."),
           p("<b>To add a new HR attribute:</b> add a column to the CSV, an AttributeDefinition to the HR application "
             "schema, one line to MAPPINGS, then re-run the setup rule and a refresh."),
 
@@ -239,7 +243,8 @@ def build(path):
             "(IdentityChangeEvent: old and new identity) and <font face='Courier'>trigger</font>."),
           code('Start -> Collect Details\n'
                '         | newStatus == Terminated and oldStatus != Terminated  -> Disable LDAP\n'
-               '         | oldStatus == Terminated and newStatus == Active      -> Enable LDAP\n'
+               '         | oldStatus == Terminated and newStatus == Active\n'
+               '         |   and emergencyDisable is not true                   -> Enable LDAP\n'
                '         | otherwise                                            -> Check Notify\n'
                'Disable LDAP / Enable LDAP: action="rule:LDAP ApacheDS - Set Account Status"\n'
                '                            resultVariable="ldapResult"  -> Check Notify\n'
@@ -254,7 +259,45 @@ def build(path):
                     "No email the first time status is set (oldStatus null) - otherwise the first refresh would email everyone."]),
 
           # -------------------------------------------------------- 9
-          p("9. Roles, entitlements and tasks", H1),
+          p("9. Emergency Identity quick link and workflow", H1),
+          p("9.1 Access: quick link, DynamicScope, capability", H2),
+          p("The QuickLink (action <font face='Courier'>workflow</font>) is bound to the DynamicScope "
+            "<b>Emergency Identity Administrators</b>, whose IdentitySelector matches "
+            "<font face='Courier'>capabilities.name</font> SystemAdministrator or EmergencyIdentityAdministrator. "
+            "The scope only hides the link, so the workflow's <b>Validate Request</b> step checks the launcher's "
+            "effective capabilities again:"),
+          code('List caps = me.getCapabilityManager().getEffectiveCapabilities();\n'
+               'for (Object c : caps) {\n'
+               '    String n = ((Capability) c).getName();\n'
+               '    if ("SystemAdministrator".equals(n) || "EmergencyIdentityAdministrator".equals(n)) admin = true;\n'
+               '}'),
+          p("9.2 The form", H2),
+          p("The form is the &lt;Form&gt; inside the first Approval step (owner = launcher, workItemType Form, "
+            "workflow variable <font face='Courier'>transient</font> = true so nothing is stored while it is open). "
+            "The identity field has <font face='Courier'>postBack=\"true\"</font>; the other fields are "
+            "<font face='Courier'>dynamic=\"true\"</font> and recalculate from it on every post back:"),
+          code('Object v = form.getField("targetIdentity").getValue();          // id or name\n'
+               'Identity id = (v instanceof Identity) ? (Identity) v : context.getObject(Identity.class, v.toString());\n'
+               'boolean on = "true".equalsIgnoreCase(String.valueOf(id.getAttribute("emergencyDisable")));\n'
+               'return on ? "Enable" : "Disable";   // AllowedValuesDefinition offers only this value'),
+          p("The Approval's <font face='Courier'>return</font> attribute copies targetIdentity, requestedAction and "
+            "justification back into workflow variables; its AfterScript sets <font face='Courier'>cancelled</font> "
+            "when the work item was not completed with Submit."),
+          p("9.3 Update, provisioning, audit", H2),
+          *bullets(["<b>Update Identity</b> takes an identity lock (ObjectUtil.lockIdentity) so it cannot clash with a "
+                    "running refresh, sets emergencyDisable, runs the inactive global rule for the new value and "
+                    "unlocks (which saves and commits).",
+                    "<b>Emergency Identity - Provision Accounts</b> collects the work first and then acts, because the LDAP "
+                    "rule commits. LDAP ApacheDS goes through <b>LDAP ApacheDS - Set Account Status</b>; other applications "
+                    "with the ENABLE feature get an AccountRequest (Disable / Enable) executed by "
+                    "<font face='Courier'>new Provisioner(context).execute(plan)</font>, with no approvals. It returns "
+                    "a Map: status (SUCCESS / PARTIAL / FAILED / NOTHING_TO_DO) and details (one line per account).",
+                    "<b>Emergency Identity - Audit</b> runs on every path, including DENIED and FAILED, and saves an "
+                    "AuditEvent directly (not through Auditor.log), so it is written even if the action is not enabled in AuditConfig.",
+                    "<b>Show Result</b> is a second, read-only form that shows workflowResult and the detail lines."]),
+
+          # -------------------------------------------------------- 10
+          p("10. Roles, entitlements and tasks", H1),
           p("Roles are data, not code. A business role either has a <b>Selector</b> (assignment rule) or none "
             "(requestable). It points to an IT role through &lt;Requirements&gt;; the IT role's Profile holds the LDAP group."),
           code('<Selector><IdentitySelector><MatchExpression and="true">\n'
@@ -272,8 +315,8 @@ def build(path):
                  ["synchronizeAttributes", "Push attributes that have targets (displayName -> LDAP)"]],
                 [70, 100]),
 
-          # -------------------------------------------------------- 10
-          p("10. How to extend", H1),
+          # -------------------------------------------------------- 11
+          p("11. How to extend", H1),
           table([["Change", "Files to touch"],
                  ["New HR column", "data CSV header; HR application schema; MAPPINGS in Setup Identity Mappings; "
                                    "ShowOnIdentityPage ADD list; re-run both setup rules + refresh"],
@@ -284,11 +327,13 @@ def build(path):
                  ["New lifecycle action", "Add a step + Transition in the workflow; put the logic in a rule, call it with action=\"rule:...\""],
                  ["Different OU / directory layout", "dn field + uniqueness DN in the Create policy; searchDN entries; group DNs in "
                                                       "IT roles, ManagedAttribute, Library (ldapGroupsOf); LDIF"],
-                 ["Another target system", "New Application XML; correlation rule; IT roles with its entitlements"]],
+                 ["Another target system", "New Application XML; correlation rule; IT roles with its entitlements"],
+                 ["Emergency disable for another target", "Give its connector the ENABLE feature (picked up automatically), or add a "
+                                                          "branch like the LDAP one in Emergency Identity - Provision Accounts"]],
                 [55, 115]),
 
-          # -------------------------------------------------------- 11
-          p("11. Coding conventions and gotchas", H1),
+          # -------------------------------------------------------- 12
+          p("12. Coding conventions and gotchas", H1),
           *bullets(["<b>Never import ObjectConfig, UIConfig or Configuration objects wholesale</b> - they replace everything. "
                     "Change them with an idempotent setup rule (see Setup Identity Mappings / ShowOnIdentityPage).",
                     "<b>Every file needs a DOCTYPE</b> whose root matches the root element, or the import fails.",
@@ -300,10 +345,12 @@ def build(path):
                     "<b>Dates:</b> DD-MM-YYYY strings everywhere, parsed with setLenient(false), compared by whole day.",
                     "<b>Close JNDI connections</b> in finally, except the aggregation-scoped one kept in state.",
                     "<b>Commit after saving</b> outside the normal pipeline: context.saveObject(x); context.commitTransaction();",
+                    "<b>Do not trust the UI for authorisation</b> - re-check rights in the workflow, as the emergency workflow does.",
+                    "<b>Audit every outcome</b>, including refused and failed requests.",
                     "<b>Keep README, init-HR-CSV.xml and these docs in step</b> with any new file."]),
 
-          # -------------------------------------------------------- 12
-          p("12. Debugging toolkit", H1),
+          # -------------------------------------------------------- 13
+          p("13. Debugging toolkit", H1),
           table([["Tool", "Use it to"],
                  ["rule \"HR CSV - Diagnose\"", "See mappings (database vs memory), the HR link, the identity values and the status rule result for one identity"],
                  ["rule \"Aggregate Single Account\"", "Re-read one account (APP_NAME / ACCOUNT_ID) and print what the source returned"],
@@ -311,6 +358,7 @@ def build(path):
                  ["Debug page (/identityiq/debug)", "View raw XML of any object: Identity, Link, Rule, Workflow, IdentityTrigger"],
                  ["IIQ console: get Identity 1000", "Same as above from the command line"],
                  ["log4j2.properties", "Raise a logger to debug, e.g. sailpoint.connector.DelimitedFileConnector; reload logging from Debug"],
+                 ["Advanced Analytics > Audit Search", "Emergency Identity events: action EmergencyIdentity*, source = requestor, target = identity"],
                  ["Task Results", "Counts (created / updated) and errors of aggregations and refreshes"],
                  ["Apache Directory Studio", "Check entries; enable 'Fetch operational attributes' to see pwdAccountLockedTime"]],
                 [58, 112]),
