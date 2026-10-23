@@ -2,7 +2,7 @@
 <!DOCTYPE Workflow PUBLIC "sailpoint.dtd" "sailpoint.dtd">
 <!--
   Launched by the "HR Lifecycle - Status Change" lifecycle event whenever the
-  identity attribute "status" changes (PreHire / Active / Terminated).
+  identity attribute "status" changes (PreHire / Active / Terminated / Disabled).
   Leaver: Terminated -> disables the LDAP ApacheDS account.
   Rehire: Terminated -> Active -> enables it again.
   Then sends an email to notifyEmail. (Group access is handled by the

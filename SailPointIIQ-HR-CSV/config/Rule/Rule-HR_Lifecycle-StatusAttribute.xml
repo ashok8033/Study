@@ -8,6 +8,11 @@
       PreHire    - today is before startDate
       Active     - startDate &lt;= today &lt;= endDate (or no endDate)
       Terminated - today is after endDate
+      Disabled   - Emergency Disable is true (set by the "Emergency Identity
+                   Status Management Workflow"); overrides PreHire and Active
+
+    Precedence: Terminated, then Disabled, then PreHire / Active. A person
+    whose end date has passed is Terminated even while Emergency Disable is true.
 
     Dates come from the HR Authoritative CSV account (DD-MM-YYYY). Because it is
     recalculated on refresh, people move between states on the right day even
@@ -65,11 +70,6 @@
   Date start = parseDate(startValue);
   Date end   = parseDate(endValue);
 
-  // No HR data at all: keep whatever we had before
-  if (start == null && end == null) {
-      return oldValue;
-  }
-
   // Midnight today, so comparisons are by whole day
   Calendar cal = Calendar.getInstance();
   cal.set(Calendar.HOUR_OF_DAY, 0);
@@ -78,9 +78,22 @@
   cal.set(Calendar.MILLISECOND, 0);
   Date today = cal.getTime();
 
+  // A past end date wins, even over Emergency Disable
   if (end != null && end.before(today)) {
       return "Terminated";
   }
+
+  // Emergency Disable overrides PreHire and Active
+  Object emergency = identity.getAttribute("emergencyDisable");
+  if (emergency != null && "true".equalsIgnoreCase(emergency.toString().trim())) {
+      return "Disabled";
+  }
+
+  // No HR data at all: keep whatever we had before, but never a stale Disabled
+  if (start == null && end == null) {
+      return "Disabled".equals(oldValue) ? null : oldValue;
+  }
+
   if (start != null && start.after(today)) {
       return "PreHire";
   }
