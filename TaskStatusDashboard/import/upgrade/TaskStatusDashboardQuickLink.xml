@@ -15,7 +15,7 @@
     </Selector>
   </DynamicScope>
 
-  <QuickLink action="external" category="Custom" messageKey="Scheduled Task Status"
+  <QuickLink action="external" category="Tasks" messageKey="Scheduled Task Status"
              name="Task Status Dashboard" ordering="10">
     <Attributes>
       <Map>

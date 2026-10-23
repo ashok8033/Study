@@ -109,7 +109,7 @@ On install the plugin imports `import/install/*.xml`, creating:
 | SPRight | `ViewTaskStatusDashboard` |
 | Capability | `TaskStatusDashboardViewer` ("Task Status Dashboard Viewer") |
 | DynamicScope (Quicklink Population) | `Task Status Dashboard Viewers` |
-| QuickLink | `Task Status Dashboard` (shown as "Scheduled Task Status", category `Custom`) |
+| QuickLink | `Task Status Dashboard` (shown as "Scheduled Task Status", category `Tasks`) |
 
 ## Upgrade
 
@@ -312,7 +312,7 @@ The IdentityIQ UI only shows a generic message. The details are in:
 | Install fails right after a fix | The uploaded zip is an old build. Rebuild from the latest `main` and upload the zip from `dist/`. |
 | No Plugins entry under the gear icon | Set `plugins.enabled=true` in `iiq.properties` and restart Tomcat. |
 | Page loads but shows "Failed to load task status (HTTP 403)" | User lacks the `ViewTaskStatusDashboard` right – assign the viewer capability. |
-| Quick link not visible (open issue on 8.5) | Log out and back in. Check the `Custom` category exists (compare with a visible quick link's `category` on the debug page) and that the user is in the **Task Status Dashboard Viewers** population (Gear → Global Settings → Quicklink Populations). To test, point the quick link's `DynamicScopeRef` at `Everyone`. |
+| Quick link not visible | IIQ 8.5 shows no category called `Custom`, so the link uses `Tasks`. Re-import `import/install/TaskStatusDashboardQuickLink.xml` from the console if an older copy still says `Custom`. Then log out and back in, and check the user is in the **Task Status Dashboard Viewers** population (Gear → Global Settings → Quicklink Populations). |
 | Email Report: "Failed to send email" | IdentityIQ mail settings missing or wrong; see the syslog for the SMTP error. |
 | Email arrives as one run of text | You are on a version before 1.0.3 (table-based email). Upgrade. |
 | Email not received | Check spam; check the **Report recipients** setting. |
