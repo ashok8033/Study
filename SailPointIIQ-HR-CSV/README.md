@@ -270,3 +270,93 @@ which the LDAP Create Account policy generates as `<uid>@example.com`. The setup
 **HR Lifecycle - Daily Identity Refresh** (or LDAP aggregation) after the LDAP account exists.
 People without an LDAP account (PreHire) have no email yet.
 
+
+## Emergency Identity Disable / Enable (quick link)
+
+Administrators can disable an identity and all its accounts straight away, and enable it again
+later, with the quick link **Emergency Identity Disable / Enable**. It starts the approval-free
+workflow **Emergency Identity Status Management Workflow**.
+
+| Item | Value |
+|---|---|
+| Identity attribute | `emergencyDisable` (Emergency Disable, boolean, editable, set only by the workflow) |
+| LCM disabled status | identity `inactive`, calculated by the global rule `Emergency Identity - Inactive Attribute`: `true` while `emergencyDisable = true`, otherwise the HR value |
+| Who sees the quick link | DynamicScope `Emergency Identity Administrators`: capability `SystemAdministrator` or `EmergencyIdentityAdministrator` |
+| Audit | one `AuditEvent` per request: `EmergencyIdentityDisable`, `EmergencyIdentityEnable` or `EmergencyIdentityDenied` |
+
+How it works:
+
+1. **Form.** Pick an identity. The form fills in the Identity Name, the Current Status
+   (`Active` when Emergency Disable is false, `Disabled` when it is true), the Emergency Disable value
+   and the HR status. The Action list offers only **Disable** for an active identity and only
+   **Enable** for a disabled one. A justification is required, and you cannot pick yourself.
+2. **Validate.** The workflow checks again that the requestor is an administrator and that the
+   action still matches the identity's current state. If a check fails, nothing is changed and the
+   request is audited as `EmergencyIdentityDenied`.
+3. **Update the identity.** It sets `emergencyDisable` (`true` for Disable, `false` for Enable) and `inactive`,
+   and saves the identity under an identity lock, so the identity record shows the change at once.
+4. **Provision** (rule `Emergency Identity - Provision Accounts`), with no approvals:
+
+   | Account | Disable | Enable |
+   |---|---|---|
+   | HR Authoritative CSV (authoritative) | not changed | not changed |
+   | LDAP ApacheDS | admin lock (`LDAP ApacheDS - Set Account Status`) | lock removed |
+   | another application whose connector supports `ENABLE` | Disable request through the IIQ provisioner (uses the app's Disable policy) | Enable request (Enable policy) |
+   | another application without `ENABLE` | reported as `MANUAL` | reported as `MANUAL` |
+
+   Accounts that are already in the requested state are skipped. **Enable** never re-enables
+   accounts while the HR status is `Terminated`.
+5. **Audit and result.** The workflow writes the audit event and shows the requestor the result:
+   `SUCCESS`, `PARTIAL`, `FAILED`, `NOTHING_TO_DO` or `DENIED`, with one line per account.
+
+Each audit event records the following:
+
+| Field | Content |
+|---|---|
+| action | `EmergencyIdentityDisable` / `EmergencyIdentityEnable` / `EmergencyIdentityDenied` |
+| source | requestor |
+| target | target identity |
+| created | date and time |
+| string1 | workflow execution result |
+| string2 | justification |
+| string3 | Emergency Disable before -> after |
+| string4 | per-account summary; the full list is in the attribute `accounts` |
+
+The same line is written to the server log at WARN level, prefixed with `Emergency Identity:`.
+To find the events, use **Advanced Analytics > Audit Search** and search by action, source or target.
+
+The HR lifecycle stays consistent with this feature:
+
+- A refresh never re-activates an emergency-disabled identity, because `inactive` comes from the global rule.
+- A rehire (Terminated -> Active) does not re-enable the LDAP account while `emergencyDisable = true`.
+- `HR CSV - Setup Identity Mappings` no longer adds a source to an attribute that is calculated by a
+  global rule, so running it again does not undo the `inactive` change.
+
+Files:
+
+- `config/QuickLink/QuickLink-Emergency_Identity-DisableEnable.xml`: SPRight, capability, DynamicScope and quick link
+- `config/Workflow/Workflow-Emergency_Identity-StatusManagement.xml`: form, validation, update, provisioning, audit, result
+- `config/Rule/Rule-Emergency_Identity-ProvisionAccounts.xml`: disables or enables the accounts
+- `config/Rule/Rule-Emergency_Identity-Audit.xml`: audit event and log line
+- `config/Rule/Rule-Emergency_Identity-InactiveAttribute.xml`: global rule for `inactive`
+- `config/Rule/Rule-Emergency_Identity-Setup.xml`: one-time setup
+
+Setup:
+
+1. Import `config/init-HR-CSV.xml`.
+2. In the IIQ console, run `rule "HR CSV - Setup Identity Mappings"` and then `rule "Emergency Identity - Setup"`.
+   The second rule creates `emergencyDisable`, switches `inactive` to the global rule and adds the audit actions.
+3. Run `rule "HR CSV - Show Attributes On Identity Page"` so that Emergency Disable shows on View Identity.
+4. Give people who are not system administrators the capability **Emergency Identity Administrator**,
+   then log out and back in.
+5. Run **HR Lifecycle - Daily Identity Refresh** once, so that `inactive` is recalculated by the new rule.
+
+To test:
+
+1. As `spadmin`, open **Quick Links > Emergency Identity Disable / Enable** and pick an active user.
+   Only Disable is offered. Submit the form.
+2. Check the result: the LDAP account is locked (`pwdAccountLockedTime`), and the identity shows
+   Emergency Disable = true and is Inactive.
+3. Open the quick link again for the same user. Only Enable is offered. Submit it, and the LDAP account is unlocked.
+4. Log in as a user without either capability: the quick link is not shown.
+5. Check the audit events in Audit Search, filtered on target = that user.

@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Rule PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<Rule language="beanshell" name="Emergency Identity - Inactive Attribute" type="IdentityAttribute">
+  <Description>
+    Global rule for the identity attribute "inactive" (the identity's disabled
+    status in IIQ / LCM). Keeps it in step with the Emergency Disable flag:
+
+      emergencyDisable = true  -> inactive = true
+      otherwise                -> inactive from the HR Authoritative CSV account
+                                  (true for PreHire and Terminated)
+
+    Replaces the plain HR mapping of "inactive", so an identity refresh never
+    re-activates an identity that an administrator disabled in an emergency.
+    Set up by the rule "Emergency Identity - Setup".
+  </Description>
+  <Signature returnType="Boolean">
+    <Inputs>
+      <Argument name="log"/>
+      <Argument name="context"/>
+      <Argument name="environment" type="Map"/>
+      <Argument name="identity" type="Identity"/>
+      <Argument name="attributeDefinition" type="AttributeDefinition"/>
+      <Argument name="oldValue"/>
+    </Inputs>
+    <Returns>
+      <Argument name="value" type="Boolean"/>
+    </Returns>
+  </Signature>
+  <Source><![CDATA[
+  import sailpoint.object.Application;
+  import sailpoint.object.Link;
+
+  boolean isTrue(Object v) {
+      if (v == null) return false;
+      if (v instanceof Boolean) return ((Boolean) v).booleanValue();
+      return "true".equalsIgnoreCase(v.toString().trim());
+  }
+
+  if (isTrue(identity.getAttribute("emergencyDisable"))) {
+      return Boolean.TRUE;
+  }
+
+  Application app = context.getObjectByName(Application.class, "HR Authoritative CSV");
+  Link hr = (app == null) ? null : identity.getLink(app);
+  if (hr == null) {
+      // No HR account: keep whatever we had before
+      return (oldValue == null) ? Boolean.FALSE : Boolean.valueOf(isTrue(oldValue));
+  }
+  return Boolean.valueOf(isTrue(hr.getAttribute("inactive")));
+  ]]></Source>
+</Rule>

@@ -1,0 +1,416 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE Workflow PUBLIC "sailpoint.dtd" "sailpoint.dtd">
+<!--
+  Launched by the quick link "Emergency Identity Disable / Enable".
+
+    1. Form: pick an identity; its name, status (Active / Disabled) and
+       Emergency Disable value are filled in. Only the valid action is offered:
+       Emergency Disable = false -> Disable, true -> Enable.
+    2. Validate: the launcher must be an administrator (SystemAdministrator or
+       EmergencyIdentityAdministrator), may not target themselves, and the
+       action must still match the identity's current state.
+    3. Update the identity: emergencyDisable and inactive (LCM disabled status).
+    4. Provision: disable / enable the accounts, no approvals
+       (rule "Emergency Identity - Provision Accounts").
+    5. Audit every request, including refused ones (rule "Emergency Identity - Audit").
+    6. Show the result to the requestor.
+-->
+<Workflow explicitTransitions="true" name="Emergency Identity Status Management Workflow">
+
+  <Variable input="true" name="launcher">
+    <Description>The administrator who opened the quick link.</Description>
+  </Variable>
+  <!-- Keep the case in memory while the requestor is on the form -->
+  <Variable initializer="true" name="transient"/>
+
+  <!-- Returned by the request form -->
+  <Variable name="targetIdentity"/>
+  <Variable name="requestedAction"/>
+  <Variable name="justification"/>
+  <Variable name="cancelled"/>
+
+  <!-- Filled in by the workflow -->
+  <Variable name="identityName"/>
+  <Variable name="identityDisplayName"/>
+  <Variable name="validationError"/>
+  <Variable name="previousValue"/>
+  <Variable name="newValue"/>
+  <Variable name="provisioningResult"/>
+  <Variable name="workflowResult"/>
+  <Variable name="resultDetails"/>
+  <Variable name="resultText"/>
+
+  <Description>Disables or re-enables an identity and its accounts by setting the Emergency Disable attribute.</Description>
+
+  <Step icon="Start" name="Start">
+    <Transition to="Request Form"/>
+  </Step>
+
+  <Step icon="Approval" name="Request Form">
+    <Approval mode="serial" name="Emergency Identity Disable / Enable" owner="ref:launcher"
+              return="targetIdentity,requestedAction,justification" send="">
+      <Arg name="workItemType" value="Form"/>
+      <Arg name="workItemDescription" value="Emergency Identity Disable / Enable"/>
+      <AfterScript>
+        <Source><![CDATA[
+          if (item == null || !item.isApproved()) {
+              workflow.put("cancelled", Boolean.TRUE);
+          }
+        ]]></Source>
+      </AfterScript>
+      <Form name="Emergency Identity Disable / Enable">
+        <Attributes>
+          <Map>
+            <entry key="pageTitle" value="Emergency Identity Disable / Enable"/>
+          </Map>
+        </Attributes>
+        <Description>Select an identity. Active identities can only be disabled; disabled identities can only be enabled. All accounts follow, without approval.</Description>
+        <Button action="next" label="Submit"/>
+        <Button action="cancel" label="Cancel"/>
+
+        <Section label="Identity" name="identitySection">
+          <Field displayName="Identity" name="targetIdentity" postBack="true" required="true"
+                 type="sailpoint.object.Identity">
+            <ValidationScript>
+              <Source><![CDATA[
+                import sailpoint.object.Identity;
+                if (value == null) return null;
+                Identity id = (value instanceof Identity) ? (Identity) value
+                            : context.getObject(Identity.class, value.toString());
+                if (id == null) return "Identity not found.";
+                if (id.isWorkgroup()) return "Select a person, not a workgroup.";
+                if (id.getName().equals(context.getUserName())) return "You cannot disable or enable your own identity.";
+                return null;
+              ]]></Source>
+            </ValidationScript>
+          </Field>
+
+          <Field displayName="Identity Name" dynamic="true" name="identityNameDisplay" readOnly="true" type="string">
+            <Script>
+              <Source><![CDATA[
+                import sailpoint.object.Identity;
+                Object v = form.getField("targetIdentity").getValue();
+                if (v == null) return null;
+                Identity id = (v instanceof Identity) ? (Identity) v : context.getObject(Identity.class, v.toString());
+                if (id == null) return null;
+                return id.getDisplayableName() + " (" + id.getName() + ")";
+              ]]></Source>
+            </Script>
+          </Field>
+
+          <Field displayName="Current Status" dynamic="true" name="currentStatus" readOnly="true" type="string">
+            <Script>
+              <Source><![CDATA[
+                import sailpoint.object.Identity;
+                Object v = form.getField("targetIdentity").getValue();
+                if (v == null) return null;
+                Identity id = (v instanceof Identity) ? (Identity) v : context.getObject(Identity.class, v.toString());
+                if (id == null) return null;
+                Object ed = id.getAttribute("emergencyDisable");
+                boolean on = (ed != null) && "true".equalsIgnoreCase(ed.toString().trim());
+                return on ? "Disabled" : "Active";
+              ]]></Source>
+            </Script>
+          </Field>
+
+          <Field displayName="Emergency Disable" dynamic="true" name="currentEmergencyDisable" readOnly="true" type="string">
+            <Script>
+              <Source><![CDATA[
+                import sailpoint.object.Identity;
+                Object v = form.getField("targetIdentity").getValue();
+                if (v == null) return null;
+                Identity id = (v instanceof Identity) ? (Identity) v : context.getObject(Identity.class, v.toString());
+                if (id == null) return null;
+                Object ed = id.getAttribute("emergencyDisable");
+                boolean on = (ed != null) && "true".equalsIgnoreCase(ed.toString().trim());
+                return on ? "True" : "False";
+              ]]></Source>
+            </Script>
+          </Field>
+
+          <Field displayName="HR Status" dynamic="true" name="currentHrStatus" readOnly="true" type="string">
+            <Script>
+              <Source><![CDATA[
+                import sailpoint.object.Identity;
+                Object v = form.getField("targetIdentity").getValue();
+                if (v == null) return null;
+                Identity id = (v instanceof Identity) ? (Identity) v : context.getObject(Identity.class, v.toString());
+                return (id == null) ? null : (String) id.getAttribute("status");
+              ]]></Source>
+            </Script>
+          </Field>
+        </Section>
+
+        <Section label="Action" name="actionSection">
+          <!-- Offers only the action that is valid for the current state -->
+          <Field displayName="Action" dynamic="true" name="requestedAction" required="true" type="string">
+            <AllowedValuesDefinition>
+              <Script>
+                <Source><![CDATA[
+                  import java.util.ArrayList;
+                  import java.util.List;
+                  import sailpoint.object.Identity;
+                  List allowed = new ArrayList();
+                  Object v = form.getField("targetIdentity").getValue();
+                  if (v == null) return allowed;
+                  Identity id = (v instanceof Identity) ? (Identity) v : context.getObject(Identity.class, v.toString());
+                  if (id == null) return allowed;
+                  Object ed = id.getAttribute("emergencyDisable");
+                  boolean on = (ed != null) && "true".equalsIgnoreCase(ed.toString().trim());
+                  allowed.add(on ? "Enable" : "Disable");
+                  return allowed;
+                ]]></Source>
+              </Script>
+            </AllowedValuesDefinition>
+            <Script>
+              <Source><![CDATA[
+                import sailpoint.object.Identity;
+                Object v = form.getField("targetIdentity").getValue();
+                if (v == null) return null;
+                Identity id = (v instanceof Identity) ? (Identity) v : context.getObject(Identity.class, v.toString());
+                if (id == null) return null;
+                Object ed = id.getAttribute("emergencyDisable");
+                boolean on = (ed != null) && "true".equalsIgnoreCase(ed.toString().trim());
+                return on ? "Enable" : "Disable";
+              ]]></Source>
+            </Script>
+            <ValidationScript>
+              <Source><![CDATA[
+                import sailpoint.object.Identity;
+                if (value == null) return null;
+                Object v = form.getField("targetIdentity").getValue();
+                if (v == null) return null;
+                Identity id = (v instanceof Identity) ? (Identity) v : context.getObject(Identity.class, v.toString());
+                if (id == null) return null;
+                Object ed = id.getAttribute("emergencyDisable");
+                boolean on = (ed != null) && "true".equalsIgnoreCase(ed.toString().trim());
+                if (on && !"Enable".equals(value)) return "This identity is already disabled; it can only be enabled.";
+                if (!on && !"Disable".equals(value)) return "This identity is active; it can only be disabled.";
+                return null;
+              ]]></Source>
+            </ValidationScript>
+          </Field>
+
+          <Field displayName="Justification" displayType="textarea" name="justification" required="true" type="string"/>
+        </Section>
+      </Form>
+    </Approval>
+    <Transition to="Stop">
+      <Script>
+        <Source><![CDATA[
+          return Boolean.TRUE.equals(cancelled);
+        ]]></Source>
+      </Script>
+    </Transition>
+    <Transition to="Validate Request"/>
+  </Step>
+
+  <Step icon="Task" name="Validate Request">
+    <Script>
+      <Source><![CDATA[
+        import java.util.List;
+        import sailpoint.object.Capability;
+        import sailpoint.object.Identity;
+
+        String error = null;
+
+        // The quick link is only shown to administrators; check again in case the workflow is launched another way
+        Identity me = (launcher == null) ? null : context.getObjectByName(Identity.class, launcher);
+        boolean admin = false;
+        if (me != null) {
+            List caps = me.getCapabilityManager().getEffectiveCapabilities();
+            if (caps != null) {
+                for (Object c : caps) {
+                    String n = ((Capability) c).getName();
+                    if ("SystemAdministrator".equals(n) || "EmergencyIdentityAdministrator".equals(n)) admin = true;
+                }
+            }
+        }
+
+        Identity target = null;
+        if (targetIdentity != null) {
+            target = (targetIdentity instanceof Identity) ? (Identity) targetIdentity
+                   : context.getObject(Identity.class, targetIdentity.toString());
+        }
+        if (target != null) {
+            workflow.put("identityName", target.getName());
+            workflow.put("identityDisplayName", target.getDisplayableName());
+        } else if (targetIdentity != null) {
+            workflow.put("identityName", targetIdentity.toString());
+        }
+
+        if (!admin) {
+            error = "Requestor " + launcher + " is not an administrator.";
+        } else if (target == null) {
+            error = "Identity " + targetIdentity + " not found.";
+        } else if (target.getName().equals(launcher)) {
+            error = "Requestors cannot disable or enable their own identity.";
+        } else if (justification == null || justification.trim().length() == 0) {
+            error = "A justification is required.";
+        } else {
+            Object ed = target.getAttribute("emergencyDisable");
+            boolean on = (ed != null) && "true".equalsIgnoreCase(ed.toString().trim());
+            workflow.put("previousValue", Boolean.valueOf(on));
+            if ("Disable".equals(requestedAction) && on) {
+                error = target.getName() + " is already disabled.";
+            } else if ("Enable".equals(requestedAction) && !on) {
+                error = target.getName() + " is already active.";
+            } else if (!"Disable".equals(requestedAction) && !"Enable".equals(requestedAction)) {
+                error = "Unknown action " + requestedAction + ".";
+            }
+        }
+
+        if (error != null) {
+            workflow.put("validationError", error);
+            workflow.put("workflowResult", "DENIED");
+            List details = new java.util.ArrayList();
+            details.add(error);
+            workflow.put("resultDetails", details);
+        }
+      ]]></Source>
+    </Script>
+    <Transition to="Audit">
+      <Script>
+        <Source><![CDATA[
+          return validationError != null;
+        ]]></Source>
+      </Script>
+    </Transition>
+    <Transition to="Update Identity"/>
+  </Step>
+
+  <Step icon="Task" name="Update Identity">
+    <Script>
+      <Source><![CDATA[
+        import java.util.ArrayList;
+        import java.util.HashMap;
+        import java.util.List;
+        import java.util.Map;
+        import sailpoint.api.ObjectUtil;
+        import sailpoint.object.Identity;
+        import sailpoint.object.Rule;
+
+        boolean disable = "Disable".equals(requestedAction);
+        Identity id = null;
+        try {
+            id = ObjectUtil.lockIdentity(context, identityName);
+            if (id == null) throw new Exception("identity " + identityName + " not found");
+
+            id.setAttribute("emergencyDisable", Boolean.valueOf(disable));
+
+            // LCM disabled status: same calculation as the identity refresh
+            Rule inactiveRule = context.getObjectByName(Rule.class, "Emergency Identity - Inactive Attribute");
+            boolean inactive = disable;
+            if (inactiveRule != null) {
+                Map args = new HashMap();
+                args.put("identity", id);
+                args.put("oldValue", Boolean.valueOf(id.isInactive()));
+                Object r = context.runRule(inactiveRule, args);
+                inactive = (r != null) && "true".equalsIgnoreCase(r.toString());
+            }
+            id.setInactive(inactive);
+            context.saveObject(id);
+            workflow.put("newValue", Boolean.valueOf(disable));
+        } catch (Exception e) {
+            log.error("Emergency Identity: could not update " + identityName, e);
+            workflow.put("workflowResult", "FAILED");
+            List details = new ArrayList();
+            details.add("Identity not updated: " + e.getMessage());
+            workflow.put("resultDetails", details);
+        } finally {
+            // Saves and commits the identity
+            if (id != null) ObjectUtil.unlockIdentity(context, id);
+        }
+      ]]></Source>
+    </Script>
+    <Transition to="Audit">
+      <Script>
+        <Source><![CDATA[
+          return "FAILED".equals(workflowResult);
+        ]]></Source>
+      </Script>
+    </Transition>
+    <Transition to="Provision Accounts"/>
+  </Step>
+
+  <Step action="rule:Emergency Identity - Provision Accounts" icon="Provision" name="Provision Accounts"
+        resultVariable="provisioningResult">
+    <Arg name="identityName" value="ref:identityName"/>
+    <Arg name="action" value="ref:requestedAction"/>
+    <Arg name="launcher" value="ref:launcher"/>
+    <Transition to="Collect Result"/>
+  </Step>
+
+  <Step icon="Task" name="Collect Result">
+    <Script>
+      <Source><![CDATA[
+        import java.util.ArrayList;
+        import java.util.List;
+        import java.util.Map;
+
+        Map r = (Map) provisioningResult;
+        List details = new ArrayList();
+        details.add("Emergency Disable set to " + newValue + " on " + identityName + ".");
+        if (r == null) {
+            workflow.put("workflowResult", "FAILED");
+            details.add("No result from the provisioning rule.");
+        } else {
+            workflow.put("workflowResult", r.get("status"));
+            if (r.get("details") != null) details.addAll((List) r.get("details"));
+        }
+        workflow.put("resultDetails", details);
+      ]]></Source>
+    </Script>
+    <Transition to="Audit"/>
+  </Step>
+
+  <Step action="rule:Emergency Identity - Audit" icon="Audit" name="Audit">
+    <Arg name="launcher" value="ref:launcher"/>
+    <Arg name="identityName" value="ref:identityName"/>
+    <Arg name="requestedAction" value="ref:requestedAction"/>
+    <Arg name="workflowResult" value="ref:workflowResult"/>
+    <Arg name="justification" value="ref:justification"/>
+    <Arg name="previousValue" value="ref:previousValue"/>
+    <Arg name="newValue" value="ref:newValue"/>
+    <Arg name="details" value="ref:resultDetails"/>
+    <Arg name="workflowCaseId" value="script:(wfcontext.getWorkflowCase() == null) ? null : wfcontext.getWorkflowCase().getId()"/>
+    <Transition to="Prepare Result"/>
+  </Step>
+
+  <Step icon="Task" name="Prepare Result">
+    <Script>
+      <Source><![CDATA[
+        StringBuilder sb = new StringBuilder();
+        if (resultDetails != null) {
+            for (Object d : resultDetails) sb.append(d).append("\n");
+        }
+        workflow.put("resultText", sb.toString().trim());
+      ]]></Source>
+    </Script>
+    <Transition to="Show Result"/>
+  </Step>
+
+  <Step icon="Approval" name="Show Result">
+    <Approval mode="serial" name="Emergency Identity Disable / Enable - Result" owner="ref:launcher" send="">
+      <Arg name="workItemType" value="Form"/>
+      <Arg name="workItemDescription" value="Emergency Identity Disable / Enable - Result"/>
+      <Form name="Emergency Identity Disable / Enable - Result">
+        <Attributes>
+          <Map>
+            <entry key="pageTitle" value="Emergency Identity Disable / Enable - Result"/>
+          </Map>
+        </Attributes>
+        <Button action="next" label="OK"/>
+        <Section name="resultSection">
+          <Field displayName="Identity" name="resultIdentity" readOnly="true" type="string" value="ref:identityName"/>
+          <Field displayName="Action" name="resultAction" readOnly="true" type="string" value="ref:requestedAction"/>
+          <Field displayName="Result" name="resultStatus" readOnly="true" type="string" value="ref:workflowResult"/>
+          <Field displayName="Details" displayType="textarea" name="resultDetailsText" readOnly="true" type="string" value="ref:resultText"/>
+        </Section>
+      </Form>
+    </Approval>
+    <Transition to="Stop"/>
+  </Step>
+
+  <Step icon="Stop" name="Stop"/>
+</Workflow>

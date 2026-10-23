@@ -79,6 +79,14 @@
           report.append("Created identity attribute ").append(idAttr).append("\n");
       }
 
+      // Calculated by a global rule (e.g. "inactive" after "Emergency Identity - Setup"):
+      // a source would bypass the rule, so leave it alone
+      if (oa.getRule() != null) {
+          report.append("Skipped ").append(idAttr).append(" (calculated by global rule ")
+                .append(oa.getRule().getName()).append(")\n");
+          continue;
+      }
+
       List sources = oa.getSources();
       if (sources == null) {
           sources = new ArrayList();

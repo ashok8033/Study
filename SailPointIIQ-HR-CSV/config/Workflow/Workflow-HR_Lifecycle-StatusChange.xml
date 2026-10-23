@@ -73,11 +73,15 @@
         ]]></Source>
       </Script>
     </Transition>
-    <!-- Rehire: enable the LDAP account again -->
+    <!-- Rehire: enable the LDAP account again, unless an administrator
+         disabled the identity with the Emergency Identity quick link -->
     <Transition to="Enable LDAP">
       <Script>
         <Source><![CDATA[
-          return "Terminated".equals(oldStatus) && "Active".equals(newStatus);
+          if (!"Terminated".equals(oldStatus) || !"Active".equals(newStatus)) return false;
+          sailpoint.object.Identity id = context.getObjectByName(sailpoint.object.Identity.class, identityName);
+          Object ed = (id == null) ? null : id.getAttribute("emergencyDisable");
+          return ed == null || !"true".equalsIgnoreCase(ed.toString().trim());
         ]]></Source>
       </Script>
     </Transition>
