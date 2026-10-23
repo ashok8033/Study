@@ -281,6 +281,7 @@ workflow **Emergency Identity Status Management Workflow**.
 |---|---|
 | Identity attribute | `emergencyDisable` (Emergency Disable, boolean, editable, set only by the workflow) |
 | LCM disabled status | identity `inactive`, calculated by the global rule `Emergency Identity - Inactive Attribute`: `true` while `emergencyDisable = true`, otherwise the HR value |
+| Quick link category | `Manage` (IIQ 8.5 shows no `Custom` category) |
 | Who sees the quick link | DynamicScope `Emergency Identity Administrators`, rule `Emergency Identity - Admin Selector`: capability `SystemAdministrator` or `EmergencyIdentityAdministrator` (direct or through a workgroup) |
 | Audit | one `AuditEvent` per request: `EmergencyIdentityDisable`, `EmergencyIdentityEnable` or `EmergencyIdentityDenied` |
 

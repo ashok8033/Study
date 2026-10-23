@@ -439,7 +439,7 @@ def build_lld(path):
           table([["Object", "Configuration"],
                  ["SPRight / Capability", "EmergencyIdentityDisableEnable / EmergencyIdentityAdministrator"],
                  ["DynamicScope 'Emergency Identity Administrators'", "capabilities.name = SystemAdministrator OR EmergencyIdentityAdministrator"],
-                 ["QuickLink 'Emergency Identity Disable / Enable'", "action workflow, category Custom, workflowName = Emergency Identity Status Management Workflow"],
+                 ["QuickLink 'Emergency Identity Disable / Enable'", "action workflow, category Manage, workflowName = Emergency Identity Status Management Workflow"],
                  ["Workflow 'Emergency Identity Status Management Workflow'", "transient; no approvals; form owner = launcher"],
                  ["File", "config/QuickLink/QuickLink-Emergency_Identity-DisableEnable.xml, "
                           "config/Workflow/Workflow-Emergency_Identity-StatusManagement.xml"]],

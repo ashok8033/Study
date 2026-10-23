@@ -29,7 +29,7 @@
     </Selector>
   </DynamicScope>
 
-  <QuickLink action="workflow" category="Custom" messageKey="Emergency Identity Disable / Enable"
+  <QuickLink action="workflow" category="Manage" messageKey="Emergency Identity Disable / Enable"
              name="Emergency Identity Disable / Enable" ordering="20">
     <Attributes>
       <Map>
