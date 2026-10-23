@@ -151,7 +151,7 @@ def build(path):
                '...\n'
                'if (start == null && end == null) return oldValue;   // no data: keep what we had'),
           table([["Rule", "Returns"],
-                 ["HR Lifecycle - Status Attribute", "Disabled while emergencyDisable is true; otherwise PreHire / Active / Terminated (same day logic as section 5.1)"],
+                 ["HR Lifecycle - Status Attribute", "Terminated if endDate passed; else Disabled while emergencyDisable is true; else PreHire / Active (same day logic as section 5.1)"],
                  ["HR CSV - Display Name", "firstName + ' ' + lastName from the HR link"],
                  ["Emergency Identity - Inactive Attribute", "true while emergencyDisable is set, otherwise the HR link's inactive"]],
                 [60, 110]),

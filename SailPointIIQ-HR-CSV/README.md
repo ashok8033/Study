@@ -83,7 +83,9 @@ global rule `HR Lifecycle - Status Attribute`, from the HR `startDate` and `endD
 | PreHire | today is before startDate |
 | Active | from startDate up to and including endDate |
 | Terminated | the day after endDate onwards |
-| Disabled | Emergency Disable is true (overrides the dates; see *Emergency Identity Disable / Enable*) |
+| Disabled | Emergency Disable is true and the end date has not passed (overrides PreHire and Active; see *Emergency Identity Disable / Enable*) |
+
+Precedence: **Terminated** (end date passed) wins over **Disabled**, which wins over PreHire and Active.
 
 When `status` changes (for example PreHire -> Active, or Active -> Terminated), the lifecycle event
 **HR Lifecycle - Status Change** starts the workflow **HR Lifecycle - Status Change Notification**.
@@ -296,7 +298,7 @@ How it works:
    action still matches the identity's current state. If a check fails, nothing is changed and the
    request is audited as `EmergencyIdentityDenied`.
 3. **Update the identity.** It sets `emergencyDisable` (`true` for Disable, `false` for Enable), `status`
-   (**Disabled** on Disable, back to PreHire / Active / Terminated from the HR dates on Enable) and `inactive`.
+   (**Disabled** on Disable, or **Terminated** if the end date has passed; back to the HR value on Enable) and `inactive`.
    It saves the identity under an identity lock, so the identity record shows the change at once.
 4. **Provision** (rule `Emergency Identity - Provision Accounts`), with no approvals:
 
@@ -330,8 +332,9 @@ To find the events, use **Advanced Analytics > Audit Search** and search by acti
 
 The HR lifecycle stays consistent with this feature:
 
-- While `emergencyDisable = true`, the status rule returns **Disabled** whatever the HR start and end dates are,
-  so a refresh keeps the identity Disabled.
+- While `emergencyDisable = true`, the status rule returns **Disabled** instead of PreHire or Active, so a refresh
+  keeps the identity Disabled. Once the end date has passed, the status is **Terminated**, even while
+  `emergencyDisable = true`, and the normal leaver steps run.
 - The birthright roles need `status = Active`. The first refresh after an emergency disable therefore removes them
   and takes the person out of the LDAP groups. After Enable, the next refresh assigns them again and restores the groups.
 - A refresh never re-activates an emergency-disabled identity, because `inactive` comes from the global rule.
